@@ -155,13 +155,9 @@ export default class PeerDropPlugin extends Plugin {
 
     this.peerManager.on('file-received', async (data: { metadata: FileMetadata; data: ArrayBuffer }) => {
       try {
-        const file = await this.peerManager?.saveReceivedFile(data.metadata, data.data);
-        if (file && this.settings.showNotifications) {
-          new Notice(`PeerDrop: Received ${data.metadata.name}`);
-        }
+        await this.peerManager?.saveReceivedFile(data.metadata, data.data);
       } catch (error) {
         logger.error('Error saving file', error);
-        new Notice(`PeerDrop: Error saving ${data.metadata.name}`);
       }
     });
 

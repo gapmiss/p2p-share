@@ -104,6 +104,7 @@ export interface PairDropFileInfo {
   name: string;
   mime: string;
   size: number;
+  path?: string; // Extension for plugin-to-plugin folder structure (ignored by PairDrop web)
 }
 
 /**
@@ -126,6 +127,7 @@ export interface PairDropFileHeader {
   name: string;
   mime: string;
   size: number;
+  path?: string; // Extension for plugin-to-plugin folder structure (ignored by PairDrop web)
 }
 
 /**

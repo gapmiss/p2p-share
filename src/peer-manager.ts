@@ -195,6 +195,14 @@ export class PeerManager extends Events {
   async sendFilesToPeer(peerId: string, files: TFile[], basePath?: string): Promise<void> {
     let connection = this.connections.get(peerId);
 
+    // If existing connection is stale (channel closed), clean it up
+    if (connection && !connection.isReady()) {
+      logger.debug('Closing stale connection to', peerId);
+      connection.close();
+      this.connections.delete(peerId);
+      connection = undefined;
+    }
+
     if (!connection) {
       connection = new RTCPeer(peerId, this.signaling, true);
       this.setupPeerHandlers(connection);
@@ -298,7 +306,14 @@ export class PeerManager extends Events {
     for (const part of parts) {
       currentPath = currentPath ? `${currentPath}/${part}` : part;
       if (!this.vault.getAbstractFileByPath(currentPath)) {
-        await this.vault.createFolder(currentPath);
+        try {
+          await this.vault.createFolder(currentPath);
+        } catch (e) {
+          // Ignore "Folder already exists" errors (race condition with parallel file saves)
+          if (!(e instanceof Error && e.message.includes('Folder already exists'))) {
+            throw e;
+          }
+        }
       }
     }
   }

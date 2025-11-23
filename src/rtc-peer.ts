@@ -118,6 +118,15 @@ class FileDigester {
     }
     this.callback(result.buffer, this.name, this.mime);
   }
+
+  getName(): string {
+    return this.name;
+  }
+
+  /** Progress for this individual file (0-1) */
+  getFileProgress(): number {
+    return this.bytesReceived / this.size;
+  }
 }
 
 export class RTCPeer extends Events {
@@ -133,6 +142,8 @@ export class RTCPeer extends Events {
   private chunker: FileChunker | null = null;
   private busy = false;
   private transferResponseResolve: ((accepted: boolean) => void) | null = null;
+  private currentSendFile: { metadata: FileMetadata; data: ArrayBuffer } | null = null;
+  private sendBytesSent = 0;
 
   // Receiver state
   private requestPending: PairDropRequest | null = null;
@@ -256,6 +267,7 @@ export class RTCPeer extends Events {
       name: f.metadata.name,
       mime: f.metadata.type,
       size: f.data.byteLength,
+      path: f.metadata.path, // Include path for plugin-to-plugin folder structure
     }));
 
     const totalSize = files.reduce((sum, f) => sum + f.data.byteLength, 0);
@@ -315,12 +327,17 @@ export class RTCPeer extends Events {
   }
 
   private async sendFile(file: { metadata: FileMetadata; data: ArrayBuffer }): Promise<void> {
+    // Track current file for progress reporting
+    this.currentSendFile = file;
+    this.sendBytesSent = 0;
+
     // Send header for this file
     const header: PairDropFileHeader = {
       type: 'header',
       name: file.metadata.name,
       mime: file.metadata.type,
       size: file.data.byteLength,
+      path: file.metadata.path, // Include path for plugin-to-plugin folder structure
     };
     this.sendJSON(header);
 
@@ -339,6 +356,18 @@ export class RTCPeer extends Events {
       await this.waitForBufferDrain();
     }
     this.dataChannel?.send(chunk);
+
+    // Track progress
+    this.sendBytesSent += chunk.byteLength;
+    if (this.currentSendFile) {
+      const progress = this.sendBytesSent / this.currentSendFile.data.byteLength;
+      this.trigger('send-progress', {
+        fileName: this.currentSendFile.metadata.name,
+        progress,
+        bytesTransferred: this.sendBytesSent,
+        totalBytes: this.currentSendFile.data.byteLength,
+      });
+    }
   }
 
   private onPartitionEnd(offset: number): void {
@@ -419,6 +448,7 @@ export class RTCPeer extends Events {
       name: acceptedHeader.name,
       size: acceptedHeader.size,
       type: acceptedHeader.mime,
+      path: acceptedHeader.path, // Preserve path for plugin-to-plugin folder structure
     };
 
     this.trigger('file-received', { metadata, data });
@@ -536,6 +566,7 @@ export class RTCPeer extends Events {
       name: h.name,
       size: h.size,
       type: h.mime,
+      path: h.path, // Preserve path for plugin-to-plugin folder structure
     }));
 
     this.trigger('transfer-request', {
@@ -603,19 +634,21 @@ export class RTCPeer extends Events {
     if (!this.digester || chunk.byteLength === 0) return;
 
     this.digester.unchunk(chunk);
-    const progress = this.digester.progress;
+    const overallProgress = this.digester.progress;
+    const fileProgress = this.digester.getFileProgress();
 
-    // Emit progress for UI
+    // Emit progress for UI (per-file progress for modal to aggregate)
     this.trigger('receive-progress', {
-      progress,
+      fileName: this.digester.getName(),
+      progress: fileProgress,
       bytesTransferred: this.totalBytesReceived + chunk.byteLength,
       totalBytes: this.requestAccepted?.totalSize || 0,
     });
 
-    // Send progress to sender occasionally
-    if (progress - this.lastProgress >= 0.005 || progress === 1) {
-      this.lastProgress = progress;
-      this.sendProgress(progress);
+    // Send overall progress to sender occasionally
+    if (overallProgress - this.lastProgress >= 0.005 || overallProgress === 1) {
+      this.lastProgress = overallProgress;
+      this.sendProgress(overallProgress);
     }
   }
 
