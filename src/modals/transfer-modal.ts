@@ -10,6 +10,7 @@ export class TransferModal extends Modal {
   private statusText: HTMLElement | null = null;
   private currentFileProgress: Map<string, number> = new Map();
   private onCancel: () => void;
+  private isComplete = false;
 
   constructor(
     app: App,
@@ -55,7 +56,10 @@ export class TransferModal extends Modal {
     overallFill.style.width = '0%';
 
     // Status text
-    this.statusText = contentEl.createDiv({ cls: 'peerdrop-transfer-status', text: 'Connecting...' });
+    this.statusText = contentEl.createDiv({
+      cls: 'peerdrop-transfer-status',
+      text: this.direction === 'send' ? 'Connecting...' : 'Waiting for files...'
+    });
 
     // Individual file progress
     this.progressContainer = contentEl.createDiv({ cls: 'peerdrop-file-progress-list' });
@@ -67,7 +71,9 @@ export class TransferModal extends Modal {
     const footer = contentEl.createDiv({ cls: 'peerdrop-modal-footer' });
     const cancelBtn = footer.createEl('button', { text: 'Cancel' });
     cancelBtn.onclick = () => {
-      this.onCancel();
+      if (!this.isComplete) {
+        this.onCancel();
+      }
       this.close();
     };
   }
@@ -94,8 +100,9 @@ export class TransferModal extends Modal {
   updateProgress(progress: TransferProgress): void {
     this.currentFileProgress.set(progress.fileName, progress.progress);
 
-    // Update individual file
-    const item = this.progressContainer?.querySelector(`[data-file="${progress.fileName}"]`);
+    // Update individual file - use CSS.escape to handle special characters in filenames
+    const escapedName = CSS.escape(progress.fileName);
+    const item = this.progressContainer?.querySelector(`[data-file="${escapedName}"]`);
     if (item) {
       const fill = item.querySelector('.peerdrop-progress-fill') as HTMLElement;
       const status = item.querySelector('.peerdrop-file-progress-status') as HTMLElement;
@@ -134,6 +141,8 @@ export class TransferModal extends Modal {
   }
 
   setComplete(): void {
+    this.isComplete = true;
+
     if (this.statusText) {
       this.statusText.setText('Transfer complete!');
       this.statusText.addClass('complete');

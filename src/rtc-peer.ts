@@ -28,6 +28,9 @@ export class RTCPeer extends Events {
   private expectedFiles: FileMetadata[] = [];
   private totalExpectedSize = 0;
   private totalReceivedSize = 0;
+  private pendingFiles: { metadata: FileMetadata; data: ArrayBuffer }[] | null = null;
+  private transferAcceptedResolve: (() => void) | null = null;
+  private transferAcceptedReject: ((err: Error) => void) | null = null;
 
   constructor(peerId: string, signaling: SignalingClient, isInitiator: boolean) {
     super();
@@ -41,9 +44,9 @@ export class RTCPeer extends Events {
 
     this.connection.onicecandidate = (event) => {
       if (event.candidate) {
+        // PairDrop expects 'ice' not 'candidate'
         this.signaling.sendSignal(this.peerId, {
-          type: 'candidate',
-          candidate: event.candidate.toJSON(),
+          ice: event.candidate.toJSON(),
         });
       }
     };
@@ -64,7 +67,7 @@ export class RTCPeer extends Events {
     };
 
     if (this.isInitiator) {
-      this.dataChannel = this.connection.createDataChannel('fileTransfer', {
+      this.dataChannel = this.connection.createDataChannel('data-channel', {
         ordered: true,
       });
       this.setupDataChannel(this.dataChannel);
@@ -72,44 +75,36 @@ export class RTCPeer extends Events {
       const offer = await this.connection.createOffer();
       await this.connection.setLocalDescription(offer);
 
+      // PairDrop expects sdp as an object with type and sdp
       this.signaling.sendSignal(this.peerId, {
-        type: 'offer',
-        sdp: offer.sdp,
+        sdp: offer,
       });
     }
   }
 
-  async handleSignal(signal: { type: string; sdp?: string; candidate?: RTCIceCandidateInit }): Promise<void> {
+  async handleSignal(signal: { sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit }): Promise<void> {
+    console.log('PeerDrop: Handling signal', signal);
+
     if (!this.connection) {
       await this.connect();
     }
 
-    switch (signal.type) {
-      case 'offer':
-        await this.connection!.setRemoteDescription({
-          type: 'offer',
-          sdp: signal.sdp,
-        });
+    // PairDrop sends sdp as an object with type and sdp
+    if (signal.sdp) {
+      await this.connection!.setRemoteDescription(signal.sdp);
+
+      if (signal.sdp.type === 'offer') {
         const answer = await this.connection!.createAnswer();
         await this.connection!.setLocalDescription(answer);
         this.signaling.sendSignal(this.peerId, {
-          type: 'answer',
-          sdp: answer.sdp,
+          sdp: answer,
         });
-        break;
+      }
+    }
 
-      case 'answer':
-        await this.connection!.setRemoteDescription({
-          type: 'answer',
-          sdp: signal.sdp,
-        });
-        break;
-
-      case 'candidate':
-        if (signal.candidate) {
-          await this.connection!.addIceCandidate(new RTCIceCandidate(signal.candidate));
-        }
-        break;
+    // PairDrop sends ice candidates as 'ice' not 'candidate'
+    if (signal.ice) {
+      await this.connection!.addIceCandidate(new RTCIceCandidate(signal.ice));
     }
   }
 
@@ -143,7 +138,9 @@ export class RTCPeer extends Events {
       throw new Error('Data channel not ready');
     }
 
-    // Send header first
+    // Store files and send header first - wait for acceptance before sending
+    this.pendingFiles = files;
+
     const header: TransferHeader = {
       type: 'header',
       files: files.map((f) => f.metadata),
@@ -153,13 +150,35 @@ export class RTCPeer extends Events {
 
     this.sendJSON(header);
 
+    // Wait for receiver to accept or reject
+    console.log('PeerDrop: Waiting for transfer acceptance...');
+    await new Promise<void>((resolve, reject) => {
+      this.transferAcceptedResolve = resolve;
+      this.transferAcceptedReject = reject;
+
+      // Timeout after 60 seconds
+      setTimeout(() => {
+        if (this.transferAcceptedReject) {
+          this.transferAcceptedReject(new Error('Transfer request timed out'));
+          this.transferAcceptedResolve = null;
+          this.transferAcceptedReject = null;
+        }
+      }, 60000);
+    });
+
+    console.log('PeerDrop: Transfer accepted, sending files...');
+
     // Send each file
     for (const file of files) {
       await this.sendFile(file.metadata, file.data);
     }
 
-    // Send completion message
+    // Send completion message to receiver
     this.sendJSON({ type: 'transfer-complete' });
+    this.pendingFiles = null;
+
+    // Trigger our own transfer-complete event for the sender's UI
+    this.trigger('transfer-complete', { files });
   }
 
   private async sendFile(metadata: FileMetadata, data: ArrayBuffer): Promise<void> {
@@ -227,8 +246,8 @@ export class RTCPeer extends Events {
   private handleControlMessage(message: { type: string; [key: string]: unknown }): void {
     switch (message.type) {
       case 'header':
-        this.expectedFiles = (message as TransferHeader).files;
-        this.totalExpectedSize = (message as TransferHeader).totalSize;
+        this.expectedFiles = (message as unknown as TransferHeader).files;
+        this.totalExpectedSize = (message as unknown as TransferHeader).totalSize;
         this.totalReceivedSize = 0;
         this.receivedFiles = [];
         this.trigger('transfer-request', {
@@ -267,10 +286,22 @@ export class RTCPeer extends Events {
         break;
 
       case 'transfer-accepted':
+        console.log('PeerDrop: Received transfer-accepted');
+        if (this.transferAcceptedResolve) {
+          this.transferAcceptedResolve();
+          this.transferAcceptedResolve = null;
+          this.transferAcceptedReject = null;
+        }
         this.trigger('transfer-accepted');
         break;
 
       case 'transfer-rejected':
+        console.log('PeerDrop: Received transfer-rejected');
+        if (this.transferAcceptedReject) {
+          this.transferAcceptedReject(new Error('Transfer rejected by peer'));
+          this.transferAcceptedResolve = null;
+          this.transferAcceptedReject = null;
+        }
         this.trigger('transfer-rejected');
         break;
     }

@@ -21,17 +21,19 @@ export const DEFAULT_SETTINGS: PeerDropSettings = {
 export interface PeerInfo {
   id: string;
   name: {
-    displayName: string;
-    deviceName: string;
-    os: string;
-    browser: string;
-    type: string;
+    displayName?: string;
+    deviceName?: string;
+    model?: string;
+    os?: string;
+    browser?: string;
+    type?: string;  // undefined for desktop browsers
   };
   rtcSupported: boolean;
 }
 
 export interface FileMetadata {
   name: string;
+  path?: string;  // Relative path including folders (e.g., "folder/subfolder/file.md")
   size: number;
   type: string;
   lastModified?: number;

@@ -85,10 +85,11 @@ export class PeerModal extends Modal {
 
     // Info
     const info = item.createDiv({ cls: 'peerdrop-peer-info' });
-    info.createDiv({ cls: 'peerdrop-peer-name', text: peer.name.displayName || peer.name.deviceName });
+    info.createDiv({ cls: 'peerdrop-peer-name', text: peer.name.displayName || peer.name.deviceName || 'Unknown' });
+    const details = [peer.name.os, peer.name.browser].filter(Boolean).join(' • ') || 'Unknown device';
     info.createDiv({
       cls: 'peerdrop-peer-details',
-      text: `${peer.name.os} • ${peer.name.browser}`,
+      text: details,
     });
 
     // RTC indicator
@@ -98,8 +99,8 @@ export class PeerModal extends Modal {
     }
   }
 
-  private getDeviceIcon(type: string): string {
-    switch (type.toLowerCase()) {
+  private getDeviceIcon(type: string | undefined): string {
+    switch (type?.toLowerCase()) {
       case 'mobile':
       case 'phone':
         return 'smartphone';
@@ -110,6 +111,7 @@ export class PeerModal extends Modal {
       case 'laptop':
         return 'laptop';
       default:
+        // Desktop browsers don't have a device type set
         return 'monitor';
     }
   }

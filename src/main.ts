@@ -115,7 +115,7 @@ export default class PeerDropPlugin extends Plugin {
 
     this.peerManager.on('server-connected', () => {
       this.updateStatusBar();
-      new Notice('PeerDrop: Connected to server');
+      // new Notice('PeerDrop: Connected to server');
     });
 
     this.peerManager.on('server-disconnected', () => {
@@ -143,8 +143,11 @@ export default class PeerDropPlugin extends Plugin {
     });
 
     this.peerManager.on('transfer-complete', () => {
+      console.log('PeerDrop: transfer-complete event, activeTransferModal:', !!this.activeTransferModal);
       if (this.activeTransferModal) {
         this.activeTransferModal.setComplete();
+      } else {
+        console.warn('PeerDrop: No active transfer modal to update');
       }
       if (this.settings.showNotifications) {
         new Notice('PeerDrop: Transfer complete!');

@@ -2,16 +2,23 @@ import { Events } from 'obsidian';
 import type { PeerInfo, SignalingMessage } from './types';
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000];
-const PING_INTERVAL = 30000;
+
+interface WsConfig {
+  rtcConfig?: RTCConfiguration;
+  wsFallback?: boolean;
+}
 
 export class SignalingClient extends Events {
   private ws: WebSocket | null = null;
   private serverUrl: string;
   private deviceName: string;
   private reconnectAttempt = 0;
-  private pingInterval: number | null = null;
   private peerId: string | null = null;
+  private peerIdHash: string | null = null;
   private manualDisconnect = false;
+  private wsConfig: WsConfig = {};
+  private currentRoomType: string | null = null;
+  private currentRoomId: string | null = null;
 
   constructor(serverUrl: string, deviceName: string) {
     super();
@@ -45,6 +52,13 @@ export class SignalingClient extends Events {
           url.pathname = '/server';
         }
 
+        // Add query parameters that PairDrop expects
+        url.searchParams.set('webrtc_supported', 'true');
+        if (this.peerId && this.peerIdHash) {
+          url.searchParams.set('peer_id', this.peerId);
+          url.searchParams.set('peer_id_hash', this.peerIdHash);
+        }
+
         console.log('PeerDrop: Connecting to', url.toString());
 
         this.ws = new WebSocket(url.toString());
@@ -62,8 +76,8 @@ export class SignalingClient extends Events {
           clearTimeout(connectionTimeout);
           console.log('PeerDrop: Connected to signaling server');
           this.reconnectAttempt = 0;
-          this.startPingInterval();
-          this.sendIntroduction();
+          // Don't send introduction - PairDrop server sends us our identity automatically
+          // Don't start ping interval - server sends pings to us, we just respond with pong
           this.trigger('connected');
           resolve();
         };
@@ -75,7 +89,6 @@ export class SignalingClient extends Events {
         this.ws.onclose = (event) => {
           clearTimeout(connectionTimeout);
           console.log('PeerDrop: Disconnected from signaling server', event.code, event.reason);
-          this.stopPingInterval();
           this.trigger('disconnected');
 
           // Only auto-reconnect if not manually disconnected
@@ -98,8 +111,9 @@ export class SignalingClient extends Events {
 
   disconnect(): void {
     this.manualDisconnect = true;
-    this.stopPingInterval();
     if (this.ws) {
+      // Tell the server we're disconnecting gracefully
+      this.send({ type: 'disconnect' });
       this.ws.close();
       this.ws = null;
     }
@@ -122,26 +136,17 @@ export class SignalingClient extends Events {
   }
 
   sendSignal(recipientId: string, message: object): void {
+    if (!this.currentRoomId) {
+      console.warn('PeerDrop: Cannot send signal, not in a room yet');
+      return;
+    }
+    console.log('PeerDrop: Sending signal to', recipientId, message);
     this.send({
       type: 'signal',
       to: recipientId,
+      roomType: this.currentRoomType,
+      roomId: this.currentRoomId,
       ...message,
-    });
-  }
-
-  private sendIntroduction(): void {
-    const name = {
-      model: 'Obsidian',
-      os: this.getOS(),
-      browser: 'Obsidian',
-      type: 'desktop',
-      deviceName: this.deviceName || this.generateDeviceName(),
-    };
-
-    this.send({
-      type: 'introduce',
-      name,
-      rtcSupported: true,
     });
   }
 
@@ -149,33 +154,60 @@ export class SignalingClient extends Events {
     try {
       const message = JSON.parse(data) as SignalingMessage;
 
+      // Don't log ping/pong to reduce noise
+      if (message.type !== 'ping') {
+        console.log('PeerDrop: Received', message.type, message);
+      }
+
       switch (message.type) {
+        case 'ws-config':
+          // Server sends RTC config and WS fallback settings
+          this.wsConfig = (message.wsConfig as WsConfig) || {};
+          console.log('PeerDrop: Got ws-config', this.wsConfig);
+          this.trigger('ws-config', this.wsConfig);
+          break;
+
+        case 'display-name':
+          // Server assigns us an identity - store it and join the IP room
+          this.peerId = message.peerId as string;
+          this.peerIdHash = message.peerIdHash as string;
+          console.log('PeerDrop: Got identity', this.peerId);
+          this.trigger('display-name', message);
+          // Now join the IP room to discover peers on the same network
+          this.joinIpRoom();
+          break;
+
         case 'peers':
-          this.peerId = message.you as string;
-          this.trigger('peers', message.peers as PeerInfo[]);
+          // List of peers already in the room - also contains room info
+          this.currentRoomType = (message.roomType as string) || 'ip';
+          this.currentRoomId = (message.roomId as string) || null;
+          console.log('PeerDrop: In room', this.currentRoomType, this.currentRoomId);
+          this.trigger('peers', (message.peers as PeerInfo[]) || []);
           break;
 
         case 'peer-joined':
+          // A new peer joined the room
           this.trigger('peer-joined', message.peer as PeerInfo);
           break;
 
         case 'peer-left':
+          // A peer left the room
           this.trigger('peer-left', message.peerId as string);
           break;
 
         case 'signal':
+          // WebRTC signaling message from another peer
+          // sender is an object with id and rtcSupported
+          const sender = message.sender as { id: string; rtcSupported: boolean } | undefined;
           this.trigger('signal', {
-            senderId: message.sender,
+            senderId: sender?.id,
             ...message,
           });
           break;
 
         case 'ping':
+          // Server keepalive - must respond immediately with pong
           this.send({ type: 'pong' });
-          break;
-
-        case 'display-name':
-          this.trigger('display-name', message);
           break;
 
         default:
@@ -186,19 +218,14 @@ export class SignalingClient extends Events {
     }
   }
 
-  private startPingInterval(): void {
-    this.pingInterval = window.setInterval(() => {
-      if (this.isConnected()) {
-        this.send({ type: 'ping' });
-      }
-    }, PING_INTERVAL);
+  private joinIpRoom(): void {
+    // Join the IP-based room so peers on the same network can discover us
+    console.log('PeerDrop: Joining IP room');
+    this.send({ type: 'join-ip-room' });
   }
 
-  private stopPingInterval(): void {
-    if (this.pingInterval) {
-      window.clearInterval(this.pingInterval);
-      this.pingInterval = null;
-    }
+  getWsConfig(): WsConfig {
+    return this.wsConfig;
   }
 
   private scheduleReconnect(): void {
@@ -217,24 +244,6 @@ export class SignalingClient extends Events {
         console.error('PeerDrop: Reconnection failed', error);
       });
     }, delay);
-  }
-
-  private getOS(): string {
-    const platform = navigator.platform.toLowerCase();
-    if (platform.includes('win')) return 'Windows';
-    if (platform.includes('mac')) return 'macOS';
-    if (platform.includes('linux')) return 'Linux';
-    if (platform.includes('iphone') || platform.includes('ipad')) return 'iOS';
-    if (platform.includes('android')) return 'Android';
-    return 'Unknown';
-  }
-
-  private generateDeviceName(): string {
-    const adjectives = ['Swift', 'Bright', 'Noble', 'Clever', 'Bold', 'Calm', 'Keen', 'Wise'];
-    const nouns = ['Falcon', 'Phoenix', 'Dragon', 'Tiger', 'Eagle', 'Wolf', 'Bear', 'Lion'];
-    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    return `${adj} ${noun}`;
   }
 
   updateServerUrl(url: string): void {

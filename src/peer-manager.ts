@@ -52,8 +52,14 @@ export class PeerManager extends Events {
       this.trigger('peers-updated', Array.from(this.peers.values()));
     });
 
-    this.signaling.on('signal', async (signal: { senderId: string; type: string; [key: string]: unknown }) => {
+    this.signaling.on('signal', async (signal: { senderId: string; sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit; [key: string]: unknown }) => {
       const { senderId, ...rest } = signal;
+
+      if (!senderId) {
+        console.warn('PeerDrop: Received signal without senderId');
+        return;
+      }
+
       let connection = this.connections.get(senderId);
 
       if (!connection) {
@@ -63,7 +69,7 @@ export class PeerManager extends Events {
         this.connections.set(senderId, connection);
       }
 
-      await connection.handleSignal(rest as { type: string; sdp?: string; candidate?: RTCIceCandidateInit });
+      await connection.handleSignal(rest as { sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit });
     });
   }
 
@@ -129,7 +135,7 @@ export class PeerManager extends Events {
     return this.peers.get(peerId);
   }
 
-  async sendFilesToPeer(peerId: string, files: TFile[]): Promise<void> {
+  async sendFilesToPeer(peerId: string, files: TFile[], basePath?: string): Promise<void> {
     let connection = this.connections.get(peerId);
 
     if (!connection) {
@@ -142,7 +148,7 @@ export class PeerManager extends Events {
     // Wait for channel to be ready
     if (!connection.isReady()) {
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Connection timeout')), 30000);
+        const timeout = setTimeout(() => reject(new Error('Connection timeout')), 120000); // 2 minutes
         connection!.on('channel-open', () => {
           clearTimeout(timeout);
           resolve();
@@ -154,9 +160,17 @@ export class PeerManager extends Events {
     const fileData: { metadata: FileMetadata; data: ArrayBuffer }[] = [];
     for (const file of files) {
       const data = await this.vault.readBinary(file);
+
+      // Calculate relative path from basePath
+      let relativePath = file.path;
+      if (basePath && file.path.startsWith(basePath)) {
+        relativePath = file.path.slice(basePath.length).replace(/^\//, '');
+      }
+
       fileData.push({
         metadata: {
           name: file.name,
+          path: relativePath,
           size: data.byteLength,
           type: this.getMimeType(file.extension),
           lastModified: file.stat.mtime,
@@ -170,7 +184,9 @@ export class PeerManager extends Events {
 
   async sendFolderToPeer(peerId: string, folder: TFolder): Promise<void> {
     const files = this.getFilesInFolder(folder);
-    await this.sendFilesToPeer(peerId, files);
+    // Use parent path as base so folder name is included in relative paths
+    const basePath = folder.parent?.path || '';
+    await this.sendFilesToPeer(peerId, files, basePath);
   }
 
   private getFilesInFolder(folder: TFolder): TFile[] {
@@ -188,28 +204,43 @@ export class PeerManager extends Events {
   async saveReceivedFile(metadata: FileMetadata, data: ArrayBuffer): Promise<TFile> {
     const saveFolder = this.settings.saveLocation;
 
-    // Ensure folder exists
-    const folderExists = this.vault.getAbstractFileByPath(saveFolder);
-    if (!folderExists) {
-      await this.vault.createFolder(saveFolder);
-    }
+    // Use path from metadata if available, otherwise just the filename
+    const relativePath = metadata.path || metadata.name;
+    let filePath = `${saveFolder}/${relativePath}`;
 
-    // Generate unique filename if needed
-    let fileName = metadata.name;
-    let filePath = `${saveFolder}/${fileName}`;
+    // Ensure all parent folders exist
+    const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
+    await this.ensureFolderExists(folderPath);
+
+    // Generate unique filename if file already exists
     let counter = 1;
-
-    while (this.vault.getAbstractFileByPath(filePath)) {
-      const ext = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')) : '';
-      const base = fileName.includes('.') ? fileName.slice(0, fileName.lastIndexOf('.')) : fileName;
-      fileName = `${base} (${counter})${ext}`;
-      filePath = `${saveFolder}/${fileName}`;
+    let finalPath = filePath;
+    while (this.vault.getAbstractFileByPath(finalPath)) {
+      const ext = filePath.includes('.') ? filePath.slice(filePath.lastIndexOf('.')) : '';
+      const base = filePath.includes('.') ? filePath.slice(0, filePath.lastIndexOf('.')) : filePath;
+      finalPath = `${base} (${counter})${ext}`;
       counter++;
     }
 
     // Save file
-    const file = await this.vault.createBinary(filePath, data);
+    const file = await this.vault.createBinary(finalPath, data);
     return file;
+  }
+
+  private async ensureFolderExists(folderPath: string): Promise<void> {
+    if (!folderPath || this.vault.getAbstractFileByPath(folderPath)) {
+      return;
+    }
+
+    // Create folders recursively
+    const parts = folderPath.split('/');
+    let currentPath = '';
+    for (const part of parts) {
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
+      if (!this.vault.getAbstractFileByPath(currentPath)) {
+        await this.vault.createFolder(currentPath);
+      }
+    }
   }
 
   acceptTransfer(peerId: string): void {

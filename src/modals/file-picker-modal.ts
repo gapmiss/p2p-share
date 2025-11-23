@@ -203,8 +203,25 @@ export class FilePickerModal extends Modal {
     if (fileCount > 0) parts.push(`${fileCount} file${fileCount > 1 ? 's' : ''}`);
     if (folderCount > 0) parts.push(`${folderCount} folder${folderCount > 1 ? 's' : ''}`);
 
-    const totalSize = Array.from(this.selectedFiles).reduce((sum, f) => sum + f.stat.size, 0);
+    // Calculate total size including files in selected folders
+    let totalSize = Array.from(this.selectedFiles).reduce((sum, f) => sum + f.stat.size, 0);
+    for (const folder of this.selectedFolders) {
+      totalSize += this.getFolderSize(folder);
+    }
+
     this.selectionInfo.setText(`${parts.join(', ')} selected (${this.formatSize(totalSize)})`);
+  }
+
+  private getFolderSize(folder: TFolder): number {
+    let size = 0;
+    for (const child of folder.children) {
+      if (child instanceof TFile) {
+        size += child.stat.size;
+      } else if (child instanceof TFolder) {
+        size += this.getFolderSize(child);
+      }
+    }
+    return size;
   }
 
   private selectAll(): void {
