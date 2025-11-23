@@ -1,8 +1,20 @@
 import { Events } from 'obsidian';
 import type { SignalingClient } from './signaling';
-import type { FileMetadata, TransferHeader } from './types';
+import { logger } from './logger';
+import type {
+  FileMetadata,
+  PairDropRequest,
+  PairDropFileHeader,
+  PairDropTransferResponse,
+  PairDropPartition,
+  PairDropPartitionReceived,
+  PairDropProgress,
+  PairDropFileTransferComplete,
+  PairDropFileInfo,
+} from './types';
 
-const CHUNK_SIZE = 64 * 1024; // 64KB chunks
+const CHUNK_SIZE = 64000; // 64KB chunks (PairDrop uses 64000, not 64*1024)
+const PARTITION_SIZE = 1000000; // 1MB partitions (PairDrop uses 1e6)
 const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB buffer threshold
 
 const RTC_CONFIG: RTCConfiguration = {
@@ -13,6 +25,101 @@ const RTC_CONFIG: RTCConfiguration = {
   ],
 };
 
+/**
+ * Handles sending a file in partitions with flow control.
+ * Mirrors PairDrop's FileChunker behavior.
+ */
+class FileChunker {
+  private data: ArrayBuffer;
+  private offset = 0;
+  private partitionSize = 0;
+  private onChunk: (chunk: ArrayBuffer) => void;
+  private onPartitionEnd: (offset: number) => void;
+
+  constructor(
+    data: ArrayBuffer,
+    onChunk: (chunk: ArrayBuffer) => void,
+    onPartitionEnd: (offset: number) => void
+  ) {
+    this.data = data;
+    this.onChunk = onChunk;
+    this.onPartitionEnd = onPartitionEnd;
+  }
+
+  nextPartition(): void {
+    this.partitionSize = 0;
+    this.readChunks();
+  }
+
+  private readChunks(): void {
+    while (this.offset < this.data.byteLength) {
+      const chunk = this.data.slice(this.offset, this.offset + CHUNK_SIZE);
+      this.offset += chunk.byteLength;
+      this.partitionSize += chunk.byteLength;
+      this.onChunk(chunk);
+
+      if (this.isFileEnd()) return;
+      if (this.partitionSize >= PARTITION_SIZE) {
+        this.onPartitionEnd(this.offset);
+        return;
+      }
+    }
+  }
+
+  isFileEnd(): boolean {
+    return this.offset >= this.data.byteLength;
+  }
+}
+
+/**
+ * Handles receiving file chunks and assembling them.
+ * Mirrors PairDrop's FileDigester behavior.
+ */
+class FileDigester {
+  private buffer: ArrayBuffer[] = [];
+  private bytesReceived = 0;
+  private size: number;
+  private name: string;
+  private mime: string;
+  private totalSize: number;
+  private totalBytesReceived: number;
+  private callback: (data: ArrayBuffer, name: string, mime: string) => void;
+  progress = 0;
+
+  constructor(
+    meta: { size: number; name: string; mime: string },
+    totalSize: number,
+    totalBytesReceived: number,
+    callback: (data: ArrayBuffer, name: string, mime: string) => void
+  ) {
+    this.size = meta.size;
+    this.name = meta.name;
+    this.mime = meta.mime;
+    this.totalSize = totalSize;
+    this.totalBytesReceived = totalBytesReceived;
+    this.callback = callback;
+  }
+
+  unchunk(chunk: ArrayBuffer): void {
+    this.buffer.push(chunk);
+    this.bytesReceived += chunk.byteLength;
+    this.progress = (this.totalBytesReceived + this.bytesReceived) / this.totalSize;
+    if (isNaN(this.progress)) this.progress = 1;
+
+    if (this.bytesReceived < this.size) return;
+
+    // File complete - assemble buffer
+    const totalLength = this.buffer.reduce((sum, buf) => sum + buf.byteLength, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const buf of this.buffer) {
+      result.set(new Uint8Array(buf), offset);
+      offset += buf.byteLength;
+    }
+    this.callback(result.buffer, this.name, this.mime);
+  }
+}
+
 export class RTCPeer extends Events {
   private peerId: string;
   private signaling: SignalingClient;
@@ -20,17 +127,20 @@ export class RTCPeer extends Events {
   private dataChannel: RTCDataChannel | null = null;
   private isInitiator: boolean;
 
-  // Transfer state
-  private sendQueue: { data: ArrayBuffer; metadata: FileMetadata }[] = [];
-  private receiveBuffer: ArrayBuffer[] = [];
-  private currentReceiveMetadata: FileMetadata | null = null;
-  private receivedFiles: { metadata: FileMetadata; data: ArrayBuffer }[] = [];
-  private expectedFiles: FileMetadata[] = [];
-  private totalExpectedSize = 0;
-  private totalReceivedSize = 0;
-  private pendingFiles: { metadata: FileMetadata; data: ArrayBuffer }[] | null = null;
-  private transferAcceptedResolve: (() => void) | null = null;
-  private transferAcceptedReject: ((err: Error) => void) | null = null;
+  // Sender state
+  private filesRequested: { metadata: FileMetadata; data: ArrayBuffer }[] | null = null;
+  private filesQueue: { metadata: FileMetadata; data: ArrayBuffer }[] = [];
+  private chunker: FileChunker | null = null;
+  private busy = false;
+  private transferResponseResolve: ((accepted: boolean) => void) | null = null;
+
+  // Receiver state
+  private requestPending: PairDropRequest | null = null;
+  private requestAccepted: PairDropRequest | null = null;
+  private digester: FileDigester | null = null;
+  private totalBytesReceived = 0;
+  private filesReceived: { metadata: FileMetadata; data: ArrayBuffer }[] = [];
+  private lastProgress = 0;
 
   constructor(peerId: string, signaling: SignalingClient, isInitiator: boolean) {
     super();
@@ -44,7 +154,6 @@ export class RTCPeer extends Events {
 
     this.connection.onicecandidate = (event) => {
       if (event.candidate) {
-        // PairDrop expects 'ice' not 'candidate'
         this.signaling.sendSignal(this.peerId, {
           ice: event.candidate.toJSON(),
         });
@@ -53,7 +162,7 @@ export class RTCPeer extends Events {
 
     this.connection.oniceconnectionstatechange = () => {
       const state = this.connection?.iceConnectionState;
-      console.log(`PeerDrop: ICE connection state: ${state}`);
+      logger.debug(`ICE connection state: ${state}`);
 
       if (state === 'connected') {
         this.trigger('connected');
@@ -75,7 +184,6 @@ export class RTCPeer extends Events {
       const offer = await this.connection.createOffer();
       await this.connection.setLocalDescription(offer);
 
-      // PairDrop expects sdp as an object with type and sdp
       this.signaling.sendSignal(this.peerId, {
         sdp: offer,
       });
@@ -83,13 +191,12 @@ export class RTCPeer extends Events {
   }
 
   async handleSignal(signal: { sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit }): Promise<void> {
-    console.log('PeerDrop: Handling signal', signal);
+    logger.debug('Handling signal', signal);
 
     if (!this.connection) {
       await this.connect();
     }
 
-    // PairDrop sends sdp as an object with type and sdp
     if (signal.sdp) {
       await this.connection!.setRemoteDescription(signal.sdp);
 
@@ -102,7 +209,6 @@ export class RTCPeer extends Events {
       }
     }
 
-    // PairDrop sends ice candidates as 'ice' not 'candidate'
     if (signal.ice) {
       await this.connection!.addIceCandidate(new RTCIceCandidate(signal.ice));
     }
@@ -113,18 +219,17 @@ export class RTCPeer extends Events {
     channel.binaryType = 'arraybuffer';
 
     channel.onopen = () => {
-      console.log('PeerDrop: Data channel open');
+      logger.debug('Data channel open');
       this.trigger('channel-open');
-      this.processQueue();
     };
 
     channel.onclose = () => {
-      console.log('PeerDrop: Data channel closed');
+      logger.debug('Data channel closed');
       this.trigger('channel-closed');
     };
 
     channel.onerror = (error) => {
-      console.error('PeerDrop: Data channel error', error);
+      logger.error('Data channel error', error);
       this.trigger('error', error);
     };
 
@@ -133,93 +238,124 @@ export class RTCPeer extends Events {
     };
   }
 
+  // ============================================================================
+  // SENDER LOGIC - PairDrop Protocol
+  // ============================================================================
+
+  /**
+   * Send files using PairDrop protocol.
+   * Flow: request -> wait for response -> send files with partitions
+   */
   async sendFiles(files: { metadata: FileMetadata; data: ArrayBuffer }[]): Promise<void> {
     if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
       throw new Error('Data channel not ready');
     }
 
-    // Store files and send header first - wait for acceptance before sending
-    this.pendingFiles = files;
+    // Build request with file headers
+    const header: PairDropFileInfo[] = files.map((f) => ({
+      name: f.metadata.name,
+      mime: f.metadata.type,
+      size: f.data.byteLength,
+    }));
 
-    const header: TransferHeader = {
-      type: 'header',
-      files: files.map((f) => f.metadata),
-      totalSize: files.reduce((sum, f) => sum + f.data.byteLength, 0),
-      fileCount: files.length,
+    const totalSize = files.reduce((sum, f) => sum + f.data.byteLength, 0);
+    const imagesOnly = files.every((f) => f.metadata.type.startsWith('image/'));
+
+    // Store files for later sending
+    this.filesRequested = files;
+
+    // Send request
+    const request: PairDropRequest = {
+      type: 'request',
+      header,
+      totalSize,
+      imagesOnly,
     };
+    this.sendJSON(request);
 
-    this.sendJSON(header);
+    logger.debug('Sent transfer request, waiting for response...');
 
-    // Wait for receiver to accept or reject
-    console.log('PeerDrop: Waiting for transfer acceptance...');
-    await new Promise<void>((resolve, reject) => {
-      this.transferAcceptedResolve = resolve;
-      this.transferAcceptedReject = reject;
+    // Wait for response
+    const accepted = await new Promise<boolean>((resolve) => {
+      this.transferResponseResolve = resolve;
 
       // Timeout after 60 seconds
       setTimeout(() => {
-        if (this.transferAcceptedReject) {
-          this.transferAcceptedReject(new Error('Transfer request timed out'));
-          this.transferAcceptedResolve = null;
-          this.transferAcceptedReject = null;
+        if (this.transferResponseResolve) {
+          this.transferResponseResolve(false);
+          this.transferResponseResolve = null;
         }
       }, 60000);
     });
 
-    console.log('PeerDrop: Transfer accepted, sending files...');
-
-    // Send each file
-    for (const file of files) {
-      await this.sendFile(file.metadata, file.data);
+    if (!accepted) {
+      this.filesRequested = null;
+      throw new Error('Transfer rejected by peer');
     }
 
-    // Send completion message to receiver
-    this.sendJSON({ type: 'transfer-complete' });
-    this.pendingFiles = null;
+    logger.debug('Transfer accepted, sending files...');
+    this.trigger('transfer-accepted');
 
-    // Trigger our own transfer-complete event for the sender's UI
-    this.trigger('transfer-complete', { files });
+    // Queue files and start sending
+    this.filesQueue = [...this.filesRequested];
+    this.filesRequested = null;
+    this.dequeueFile();
   }
 
-  private async sendFile(metadata: FileMetadata, data: ArrayBuffer): Promise<void> {
-    // Send file start marker
-    this.sendJSON({ type: 'file-start', metadata });
-
-    // Send chunks
-    let offset = 0;
-    while (offset < data.byteLength) {
-      // Wait if buffer is full
-      while (
-        this.dataChannel &&
-        this.dataChannel.bufferedAmount > MAX_BUFFER_SIZE
-      ) {
-        await this.waitForBufferDrain();
-      }
-
-      const chunk = data.slice(offset, offset + CHUNK_SIZE);
-      this.dataChannel?.send(chunk);
-      offset += chunk.byteLength;
-
-      // Report progress
-      this.trigger('send-progress', {
-        fileName: metadata.name,
-        progress: offset / data.byteLength,
-        bytesTransferred: offset,
-        totalBytes: data.byteLength,
-      });
+  private dequeueFile(): void {
+    if (this.filesQueue.length === 0) {
+      this.busy = false;
+      this.trigger('transfer-complete', { files: [] });
+      return;
     }
 
-    // Send file end marker
-    this.sendJSON({ type: 'file-end', name: metadata.name });
+    this.busy = true;
+    const file = this.filesQueue.shift()!;
+    this.sendFile(file);
+  }
+
+  private async sendFile(file: { metadata: FileMetadata; data: ArrayBuffer }): Promise<void> {
+    // Send header for this file
+    const header: PairDropFileHeader = {
+      type: 'header',
+      name: file.metadata.name,
+      mime: file.metadata.type,
+      size: file.data.byteLength,
+    };
+    this.sendJSON(header);
+
+    // Create chunker and start sending
+    this.chunker = new FileChunker(
+      file.data,
+      (chunk) => this.sendChunk(chunk),
+      (offset) => this.onPartitionEnd(offset)
+    );
+    this.chunker.nextPartition();
+  }
+
+  private async sendChunk(chunk: ArrayBuffer): Promise<void> {
+    // Wait if buffer is full
+    while (this.dataChannel && this.dataChannel.bufferedAmount > MAX_BUFFER_SIZE) {
+      await this.waitForBufferDrain();
+    }
+    this.dataChannel?.send(chunk);
+  }
+
+  private onPartitionEnd(offset: number): void {
+    const partition: PairDropPartition = { type: 'partition', offset };
+    this.sendJSON(partition);
+    // Wait for partition-received before continuing (handled in message handler)
+  }
+
+  private sendNextPartition(): void {
+    if (!this.chunker || this.chunker.isFileEnd()) return;
+    this.chunker.nextPartition();
   }
 
   private waitForBufferDrain(): Promise<void> {
     return new Promise((resolve) => {
       const check = () => {
-        if (
-          !this.dataChannel ||
-          this.dataChannel.bufferedAmount <= MAX_BUFFER_SIZE / 2
-        ) {
+        if (!this.dataChannel || this.dataChannel.bufferedAmount <= MAX_BUFFER_SIZE / 2) {
           resolve();
         } else {
           setTimeout(check, 50);
@@ -228,6 +364,86 @@ export class RTCPeer extends Events {
       check();
     });
   }
+
+  // ============================================================================
+  // RECEIVER LOGIC - PairDrop Protocol
+  // ============================================================================
+
+  /**
+   * Accept the pending transfer request.
+   */
+  acceptTransfer(): void {
+    if (!this.requestPending) return;
+
+    const response: PairDropTransferResponse = {
+      type: 'files-transfer-response',
+      accepted: true,
+    };
+    this.sendJSON(response);
+
+    this.requestAccepted = this.requestPending;
+    this.totalBytesReceived = 0;
+    this.busy = true;
+    this.filesReceived = [];
+    this.requestPending = null;
+  }
+
+  /**
+   * Reject the pending transfer request.
+   */
+  rejectTransfer(reason?: string): void {
+    const response: PairDropTransferResponse = {
+      type: 'files-transfer-response',
+      accepted: false,
+      reason,
+    };
+    this.sendJSON(response);
+    this.requestPending = null;
+    this.trigger('transfer-rejected');
+  }
+
+  private onFileReceived(data: ArrayBuffer, name: string, mime: string): void {
+    if (!this.requestAccepted) return;
+
+    const acceptedHeader = this.requestAccepted.header.shift();
+    if (!acceptedHeader) return;
+
+    this.totalBytesReceived += data.byteLength;
+
+    // Send file-transfer-complete to sender
+    const complete: PairDropFileTransferComplete = { type: 'file-transfer-complete' };
+    this.sendJSON(complete);
+
+    // Build metadata from accepted header
+    const metadata: FileMetadata = {
+      name: acceptedHeader.name,
+      size: acceptedHeader.size,
+      type: acceptedHeader.mime,
+    };
+
+    this.trigger('file-received', { metadata, data });
+    this.filesReceived.push({ metadata, data });
+
+    // Check if all files received
+    if (this.requestAccepted.header.length === 0) {
+      this.busy = false;
+      this.trigger('transfer-complete', {
+        files: this.filesReceived,
+        totalSize: this.requestAccepted.totalSize,
+      });
+      this.filesReceived = [];
+      this.requestAccepted = null;
+    }
+  }
+
+  private sendProgress(progress: number): void {
+    const msg: PairDropProgress = { type: 'progress', progress };
+    this.sendJSON(msg);
+  }
+
+  // ============================================================================
+  // MESSAGE HANDLING
+  // ============================================================================
 
   private sendJSON(data: object): void {
     if (this.dataChannel && this.dataChannel.readyState === 'open') {
@@ -245,109 +461,167 @@ export class RTCPeer extends Events {
 
   private handleControlMessage(message: { type: string; [key: string]: unknown }): void {
     switch (message.type) {
+      // === Receiver handling (messages from sender) ===
+      case 'request':
+        this.handleRequest(message as unknown as PairDropRequest);
+        break;
+
       case 'header':
-        this.expectedFiles = (message as unknown as TransferHeader).files;
-        this.totalExpectedSize = (message as unknown as TransferHeader).totalSize;
-        this.totalReceivedSize = 0;
-        this.receivedFiles = [];
-        this.trigger('transfer-request', {
-          files: this.expectedFiles,
-          totalSize: this.totalExpectedSize,
-          peerId: this.peerId,
-        });
+        this.handleFileHeader(message as unknown as PairDropFileHeader);
         break;
 
-      case 'file-start':
-        this.currentReceiveMetadata = message.metadata as FileMetadata;
-        this.receiveBuffer = [];
+      case 'partition':
+        this.handlePartition(message as unknown as PairDropPartition);
         break;
 
-      case 'file-end':
-        if (this.currentReceiveMetadata) {
-          const fileData = this.concatenateBuffers(this.receiveBuffer);
-          this.receivedFiles.push({
-            metadata: this.currentReceiveMetadata,
-            data: fileData,
-          });
-          this.trigger('file-received', {
-            metadata: this.currentReceiveMetadata,
-            data: fileData,
-          });
-          this.currentReceiveMetadata = null;
-          this.receiveBuffer = [];
-        }
+      // === Sender handling (messages from receiver) ===
+      case 'files-transfer-response':
+        this.handleTransferResponse(message as unknown as PairDropTransferResponse);
         break;
 
-      case 'transfer-complete':
-        this.trigger('transfer-complete', {
-          files: this.receivedFiles,
-          totalSize: this.totalReceivedSize,
-        });
+      case 'partition-received':
+        this.sendNextPartition();
         break;
 
+      case 'progress':
+        this.handleProgress(message as unknown as PairDropProgress);
+        break;
+
+      case 'file-transfer-complete':
+        this.handleFileTransferComplete();
+        break;
+
+      // === Legacy protocol support (plugin-to-plugin) ===
       case 'transfer-accepted':
-        console.log('PeerDrop: Received transfer-accepted');
-        if (this.transferAcceptedResolve) {
-          this.transferAcceptedResolve();
-          this.transferAcceptedResolve = null;
-          this.transferAcceptedReject = null;
+        // Legacy: map to new protocol
+        if (this.transferResponseResolve) {
+          this.transferResponseResolve(true);
+          this.transferResponseResolve = null;
         }
-        this.trigger('transfer-accepted');
         break;
 
       case 'transfer-rejected':
-        console.log('PeerDrop: Received transfer-rejected');
-        if (this.transferAcceptedReject) {
-          this.transferAcceptedReject(new Error('Transfer rejected by peer'));
-          this.transferAcceptedResolve = null;
-          this.transferAcceptedReject = null;
+        // Legacy: map to new protocol
+        if (this.transferResponseResolve) {
+          this.transferResponseResolve(false);
+          this.transferResponseResolve = null;
         }
         this.trigger('transfer-rejected');
         break;
+
+      // === Display name change ===
+      case 'display-name-changed':
+        this.trigger('display-name-changed', {
+          peerId: this.peerId,
+          displayName: message.displayName as string,
+        });
+        break;
+
+      default:
+        logger.warn('Unknown message type', message.type);
+    }
+  }
+
+  private handleRequest(request: PairDropRequest): void {
+    if (this.requestPending) {
+      // Only accept one request at a time
+      this.rejectTransfer();
+      return;
+    }
+
+    this.requestPending = request;
+
+    // Convert to FileMetadata format for UI
+    const files: FileMetadata[] = request.header.map((h) => ({
+      name: h.name,
+      size: h.size,
+      type: h.mime,
+    }));
+
+    this.trigger('transfer-request', {
+      files,
+      totalSize: request.totalSize,
+      peerId: this.peerId,
+      thumbnailDataUrl: request.thumbnailDataUrl,
+    });
+  }
+
+  private handleFileHeader(header: PairDropFileHeader): void {
+    if (!this.requestAccepted || !this.requestAccepted.header.length) return;
+
+    this.lastProgress = 0;
+    this.digester = new FileDigester(
+      { size: header.size, name: header.name, mime: header.mime },
+      this.requestAccepted.totalSize,
+      this.totalBytesReceived,
+      (data, name, mime) => this.onFileReceived(data, name, mime)
+    );
+  }
+
+  private handlePartition(partition: PairDropPartition): void {
+    // Acknowledge partition received
+    const ack: PairDropPartitionReceived = {
+      type: 'partition-received',
+      offset: partition.offset,
+    };
+    this.sendJSON(ack);
+  }
+
+  private handleTransferResponse(response: PairDropTransferResponse): void {
+    if (this.transferResponseResolve) {
+      this.transferResponseResolve(response.accepted);
+      this.transferResponseResolve = null;
+    }
+
+    if (!response.accepted) {
+      this.filesRequested = null;
+      if (response.reason === 'ios-memory-limit') {
+        this.trigger('transfer-rejected', { reason: 'iOS memory limit exceeded' });
+      } else {
+        this.trigger('transfer-rejected');
+      }
+    }
+  }
+
+  private handleProgress(progress: PairDropProgress): void {
+    // Receiver's progress report - update sender's UI
+    this.trigger('receive-progress-from-peer', { progress: progress.progress });
+  }
+
+  private handleFileTransferComplete(): void {
+    // Receiver confirmed file received - move to next file
+    this.chunker = null;
+    if (this.filesQueue.length === 0) {
+      this.busy = false;
+      this.trigger('transfer-complete', { files: [] });
+    } else {
+      this.dequeueFile();
     }
   }
 
   private handleChunk(chunk: ArrayBuffer): void {
-    this.receiveBuffer.push(chunk);
-    this.totalReceivedSize += chunk.byteLength;
+    if (!this.digester || chunk.byteLength === 0) return;
 
-    if (this.currentReceiveMetadata) {
-      const currentFileSize = this.receiveBuffer.reduce(
-        (sum, buf) => sum + buf.byteLength,
-        0
-      );
-      this.trigger('receive-progress', {
-        fileName: this.currentReceiveMetadata.name,
-        progress: currentFileSize / this.currentReceiveMetadata.size,
-        bytesTransferred: currentFileSize,
-        totalBytes: this.currentReceiveMetadata.size,
-        totalTransferProgress: this.totalReceivedSize / this.totalExpectedSize,
-      });
+    this.digester.unchunk(chunk);
+    const progress = this.digester.progress;
+
+    // Emit progress for UI
+    this.trigger('receive-progress', {
+      progress,
+      bytesTransferred: this.totalBytesReceived + chunk.byteLength,
+      totalBytes: this.requestAccepted?.totalSize || 0,
+    });
+
+    // Send progress to sender occasionally
+    if (progress - this.lastProgress >= 0.005 || progress === 1) {
+      this.lastProgress = progress;
+      this.sendProgress(progress);
     }
   }
 
-  private concatenateBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
-    const totalLength = buffers.reduce((sum, buf) => sum + buf.byteLength, 0);
-    const result = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const buffer of buffers) {
-      result.set(new Uint8Array(buffer), offset);
-      offset += buffer.byteLength;
-    }
-    return result.buffer;
-  }
-
-  acceptTransfer(): void {
-    this.sendJSON({ type: 'transfer-accepted' });
-  }
-
-  rejectTransfer(): void {
-    this.sendJSON({ type: 'transfer-rejected' });
-  }
-
-  private processQueue(): void {
-    // Process any queued sends
-  }
+  // ============================================================================
+  // LIFECYCLE
+  // ============================================================================
 
   close(): void {
     if (this.dataChannel) {

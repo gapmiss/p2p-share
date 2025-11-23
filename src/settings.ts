@@ -1,6 +1,8 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, setIcon } from 'obsidian';
 import type PeerDropPlugin from './main';
-import type { PeerDropSettings } from './types';
+import type { PairedDevice } from './types';
+import type { LogLevel } from './logger';
+import { ConfirmModal } from './modals';
 
 export class PeerDropSettingTab extends PluginSettingTab {
   plugin: PeerDropPlugin;
@@ -18,18 +20,6 @@ export class PeerDropSettingTab extends PluginSettingTab {
 
     // Server Configuration
     containerEl.createEl('h3', { text: 'Server Configuration' });
-
-    // Server requirement notice
-    const noticeEl = containerEl.createDiv({ cls: 'peerdrop-server-notice' });
-    noticeEl.createEl('p', {
-      text: 'PeerDrop requires a self-hosted PairDrop server. The public pairdrop.net does not accept external WebSocket connections.',
-      cls: 'peerdrop-notice-text'
-    });
-    const linkEl = noticeEl.createEl('p');
-    linkEl.createEl('a', {
-      text: 'Learn how to host your own PairDrop server',
-      href: 'https://github.com/schlagmichdoch/PairDrop/blob/master/docs/host-your-own.md'
-    });
 
     new Setting(containerEl)
       .setName('Signaling server URL')
@@ -117,6 +107,23 @@ export class PeerDropSettingTab extends PluginSettingTab {
           })
       );
 
+    new Setting(containerEl)
+      .setName('Log level')
+      .setDesc('Console log verbosity for debugging')
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption('none', 'None')
+          .addOption('error', 'Errors only')
+          .addOption('warn', 'Warnings & errors')
+          .addOption('info', 'Info')
+          .addOption('debug', 'Debug (verbose)')
+          .setValue(this.plugin.settings.logLevel)
+          .onChange(async (value: LogLevel) => {
+            this.plugin.settings.logLevel = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // Connection Status
     containerEl.createEl('h3', { text: 'Connection Status' });
 
@@ -140,5 +147,98 @@ export class PeerDropSettingTab extends PluginSettingTab {
               : 'peerdrop-status-disconnected';
           })
       );
+
+    // Paired Devices Section
+    containerEl.createEl('h3', { text: 'Paired Devices' });
+
+    const pairedDevices = this.plugin.settings.pairedDevices;
+
+    if (pairedDevices.length === 0) {
+      const emptyState = containerEl.createDiv({ cls: 'peerdrop-paired-empty' });
+      emptyState.createEl('p', {
+        text: 'No paired devices. Use "Pair with device" command to pair across networks.',
+        cls: 'peerdrop-paired-empty-text',
+      });
+    } else {
+      const pairedList = containerEl.createDiv({ cls: 'peerdrop-paired-list' });
+
+      for (const device of pairedDevices) {
+        this.renderPairedDevice(pairedList, device);
+      }
+
+      // Add "Remove all" button if there are multiple devices
+      if (pairedDevices.length > 1) {
+        new Setting(containerEl)
+          .setName('Remove all paired devices')
+          .setDesc('This will unpair all devices')
+          .addButton((button) =>
+            button
+              .setButtonText('Remove All')
+              .setWarning()
+              .onClick(() => {
+                new ConfirmModal(
+                  this.app,
+                  'Remove All Paired Devices',
+                  `Are you sure you want to remove all ${pairedDevices.length} paired devices? You will need to pair again with each device.`,
+                  async () => {
+                    for (const device of [...this.plugin.settings.pairedDevices]) {
+                      await this.plugin.removePairedDevice(device.roomSecret);
+                    }
+                    this.display(); // Refresh
+                  }
+                ).open();
+              })
+          );
+      }
+    }
+  }
+
+  private renderPairedDevice(container: HTMLElement, device: PairedDevice): void {
+    const item = container.createDiv({ cls: 'peerdrop-paired-item' });
+
+    const info = item.createDiv({ cls: 'peerdrop-paired-info' });
+    const iconEl = info.createDiv({ cls: 'peerdrop-paired-icon' });
+    setIcon(iconEl, 'smartphone');
+
+    const details = info.createDiv({ cls: 'peerdrop-paired-details' });
+    details.createDiv({ cls: 'peerdrop-paired-name', text: device.displayName });
+    details.createDiv({
+      cls: 'peerdrop-paired-date',
+      text: `Paired ${this.formatDate(device.pairedAt)}`,
+    });
+
+    const removeBtn = item.createEl('button', {
+      cls: 'peerdrop-paired-remove',
+      attr: { 'aria-label': 'Remove pairing' },
+    });
+    setIcon(removeBtn, 'x');
+    removeBtn.onclick = () => {
+      new ConfirmModal(
+        this.app,
+        'Remove Paired Device',
+        `Are you sure you want to remove "${device.displayName}"? You will need to pair again to share files with this device.`,
+        async () => {
+          await this.plugin.removePairedDevice(device.roomSecret);
+          this.display(); // Refresh
+        }
+      ).open();
+    };
+  }
+
+  private formatDate(timestamp: number): string {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return 'today';
+    } else if (diffDays === 1) {
+      return 'yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   }
 }

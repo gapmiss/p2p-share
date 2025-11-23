@@ -1,5 +1,19 @@
 // PeerDrop Types
 
+import type { LogLevel } from './logger';
+
+/**
+ * A paired device that can be discovered across networks.
+ */
+export interface PairedDevice {
+  /** The room secret used to connect to this device */
+  roomSecret: string;
+  /** Display name of the paired device */
+  displayName: string;
+  /** When the pairing was created */
+  pairedAt: number;
+}
+
 export interface PeerDropSettings {
   serverUrl: string;
   saveLocation: string;
@@ -7,6 +21,10 @@ export interface PeerDropSettings {
   deviceName: string;
   autoAcceptFromPaired: boolean;
   showNotifications: boolean;
+  /** Room secrets for paired devices (enables cross-network discovery) */
+  pairedDevices: PairedDevice[];
+  /** Log level for console output */
+  logLevel: LogLevel;
 }
 
 export const DEFAULT_SETTINGS: PeerDropSettings = {
@@ -16,6 +34,8 @@ export const DEFAULT_SETTINGS: PeerDropSettings = {
   deviceName: '',
   autoAcceptFromPaired: false,
   showNotifications: true,
+  pairedDevices: [],
+  logLevel: 'error',
 };
 
 export interface PeerInfo {
@@ -69,3 +89,103 @@ export interface RTCMessage {
 }
 
 export type TransferState = 'idle' | 'connecting' | 'transferring' | 'completed' | 'error';
+
+// ============================================================================
+// PairDrop Protocol Messages
+// These types implement the PairDrop file transfer protocol for compatibility
+// with PairDrop web/mobile apps.
+// ============================================================================
+
+/**
+ * File header metadata in PairDrop format.
+ * Used in request messages to describe files to be transferred.
+ */
+export interface PairDropFileInfo {
+  name: string;
+  mime: string;
+  size: number;
+}
+
+/**
+ * Initial transfer request sent by the sender.
+ * Contains metadata about all files to be transferred.
+ */
+export interface PairDropRequest {
+  type: 'request';
+  header: PairDropFileInfo[];
+  totalSize: number;
+  imagesOnly: boolean;
+  thumbnailDataUrl?: string;
+}
+
+/**
+ * Header sent before each file's binary data.
+ */
+export interface PairDropFileHeader {
+  type: 'header';
+  name: string;
+  mime: string;
+  size: number;
+}
+
+/**
+ * Sent after each 1MB partition of data.
+ * Triggers flow control - sender waits for partition-received before continuing.
+ */
+export interface PairDropPartition {
+  type: 'partition';
+  offset: number;
+}
+
+/**
+ * Acknowledgment sent by receiver after receiving a partition.
+ */
+export interface PairDropPartitionReceived {
+  type: 'partition-received';
+  offset: number;
+}
+
+/**
+ * Response to a transfer request.
+ */
+export interface PairDropTransferResponse {
+  type: 'files-transfer-response';
+  accepted: boolean;
+  reason?: string;  // e.g., 'ios-memory-limit'
+}
+
+/**
+ * Progress update sent by receiver during transfer.
+ */
+export interface PairDropProgress {
+  type: 'progress';
+  progress: number;  // 0-1
+}
+
+/**
+ * Sent by receiver when a file has been fully received.
+ */
+export interface PairDropFileTransferComplete {
+  type: 'file-transfer-complete';
+}
+
+/**
+ * Text message (for future text sharing feature).
+ */
+export interface PairDropTextMessage {
+  type: 'text';
+  text: string;
+}
+
+/**
+ * Union type of all PairDrop data channel messages.
+ */
+export type PairDropMessage =
+  | PairDropRequest
+  | PairDropFileHeader
+  | PairDropPartition
+  | PairDropPartitionReceived
+  | PairDropTransferResponse
+  | PairDropProgress
+  | PairDropFileTransferComplete
+  | PairDropTextMessage;

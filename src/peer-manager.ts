@@ -1,6 +1,7 @@
 import { Events, TFile, TFolder, Vault } from 'obsidian';
 import { SignalingClient } from './signaling';
 import { RTCPeer } from './rtc-peer';
+import { logger } from './logger';
 import type { PeerInfo, FileMetadata, PeerDropSettings } from './types';
 
 export class PeerManager extends Events {
@@ -15,6 +16,8 @@ export class PeerManager extends Events {
     this.vault = vault;
     this.settings = settings;
     this.signaling = new SignalingClient(settings.serverUrl, settings.deviceName);
+    // Set room secrets from paired devices before connecting
+    this.signaling.setRoomSecrets(settings.pairedDevices.map((d) => d.roomSecret));
     this.setupSignalingHandlers();
   }
 
@@ -27,18 +30,37 @@ export class PeerManager extends Events {
       this.trigger('server-disconnected');
     });
 
-    this.signaling.on('peers', (peers: PeerInfo[]) => {
-      this.peers.clear();
-      for (const peer of peers) {
+    this.signaling.on('peers', (data: { peers: PeerInfo[]; roomType: string; roomId: string }) => {
+      // Add peers to our map (don't clear - we may be in multiple rooms)
+      for (const peer of data.peers) {
         this.peers.set(peer.id, peer);
       }
       this.trigger('peers-updated', Array.from(this.peers.values()));
+
+      // If this is a secret room (paired device), emit event to update device name
+      if (data.roomType === 'secret' && data.peers.length > 0) {
+        const peer = data.peers[0];
+        const displayName = peer.name.displayName || peer.name.deviceName || peer.name.model || 'Paired Device';
+        this.trigger('paired-device-identified', {
+          roomSecret: data.roomId,
+          displayName,
+        });
+      }
     });
 
-    this.signaling.on('peer-joined', (peer: PeerInfo) => {
-      this.peers.set(peer.id, peer);
-      this.trigger('peer-joined', peer);
+    this.signaling.on('peer-joined', (data: { peer: PeerInfo; roomType: string; roomId: string }) => {
+      this.peers.set(data.peer.id, data.peer);
+      this.trigger('peer-joined', data.peer);
       this.trigger('peers-updated', Array.from(this.peers.values()));
+
+      // If this is a secret room (paired device), emit event to update device name
+      if (data.roomType === 'secret') {
+        const displayName = data.peer.name.displayName || data.peer.name.deviceName || data.peer.name.model || 'Paired Device';
+        this.trigger('paired-device-identified', {
+          roomSecret: data.roomId,
+          displayName,
+        });
+      }
     });
 
     this.signaling.on('peer-left', (peerId: string) => {
@@ -56,7 +78,7 @@ export class PeerManager extends Events {
       const { senderId, ...rest } = signal;
 
       if (!senderId) {
-        console.warn('PeerDrop: Received signal without senderId');
+        logger.warn('Received signal without senderId');
         return;
       }
 
@@ -70,6 +92,27 @@ export class PeerManager extends Events {
       }
 
       await connection.handleSignal(rest as { sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit });
+    });
+
+    // Device pairing events
+    this.signaling.on('pair-device-initiated', (data: { pairKey: string; roomSecret: string }) => {
+      this.trigger('pair-device-initiated', data);
+    });
+
+    this.signaling.on('pair-device-joined', (data: { roomSecret: string; peerId: string }) => {
+      this.trigger('pair-device-joined', data);
+    });
+
+    this.signaling.on('pair-device-join-key-invalid', () => {
+      this.trigger('pair-device-join-key-invalid');
+    });
+
+    this.signaling.on('pair-device-canceled', (pairKey: string) => {
+      this.trigger('pair-device-canceled', pairKey);
+    });
+
+    this.signaling.on('secret-room-deleted', (roomSecret: string) => {
+      this.trigger('secret-room-deleted', roomSecret);
     });
   }
 
@@ -109,10 +152,24 @@ export class PeerManager extends Events {
     peer.on('transfer-rejected', () => {
       this.trigger('transfer-rejected', peer.getPeerId());
     });
+
+    peer.on('display-name-changed', (data: { peerId: string; displayName: string }) => {
+      // Update peer info in our map
+      const peerInfo = this.peers.get(data.peerId);
+      if (peerInfo) {
+        peerInfo.name.displayName = data.displayName;
+        this.trigger('peers-updated', Array.from(this.peers.values()));
+      }
+      this.trigger('peer-display-name-changed', data);
+    });
   }
 
   async connect(): Promise<void> {
     await this.signaling.connect();
+  }
+
+  getDisplayName(): string | null {
+    return this.signaling.getDisplayName();
   }
 
   disconnect(): void {
@@ -157,11 +214,14 @@ export class PeerManager extends Events {
     }
 
     // Read files from vault
+    // Note: PairDrop web doesn't support folder structure, so we flatten files.
+    // The 'path' field is kept for potential plugin-to-plugin transfers but
+    // PairDrop web will ignore it and use only the filename.
     const fileData: { metadata: FileMetadata; data: ArrayBuffer }[] = [];
     for (const file of files) {
       const data = await this.vault.readBinary(file);
 
-      // Calculate relative path from basePath
+      // Calculate relative path from basePath (for plugin-to-plugin transfers)
       let relativePath = file.path;
       if (basePath && file.path.startsWith(basePath)) {
         relativePath = file.path.slice(basePath.length).replace(/^\//, '');
@@ -170,7 +230,7 @@ export class PeerManager extends Events {
       fileData.push({
         metadata: {
           name: file.name,
-          path: relativePath,
+          path: relativePath,  // Kept for backwards compat, not used in PairDrop protocol
           size: data.byteLength,
           type: this.getMimeType(file.extension),
           lastModified: file.stat.mtime,
@@ -276,5 +336,26 @@ export class PeerManager extends Events {
     this.settings = settings;
     this.signaling.updateServerUrl(settings.serverUrl);
     this.signaling.updateDeviceName(settings.deviceName);
+    this.signaling.setRoomSecrets(settings.pairedDevices.map((d) => d.roomSecret));
+  }
+
+  // ============================================================================
+  // DEVICE PAIRING
+  // ============================================================================
+
+  pairDeviceInitiate(): void {
+    this.signaling.pairDeviceInitiate();
+  }
+
+  pairDeviceJoin(pairKey: string): void {
+    this.signaling.pairDeviceJoin(pairKey);
+  }
+
+  pairDeviceCancel(): void {
+    this.signaling.pairDeviceCancel();
+  }
+
+  deleteRoomSecret(roomSecret: string): void {
+    this.signaling.deleteRoomSecret(roomSecret);
   }
 }

@@ -5,11 +5,13 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 ## Features
 
 - **P2P File Sharing**: Direct peer-to-peer file transfers using WebRTC
+- **PairDrop Compatible**: Works with PairDrop web and mobile apps
+- **Device Pairing**: Pair devices for cross-network file sharing
 - **Share Files & Folders**: Share individual files or entire folders between vaults
 - **Cross-Platform**: Works on desktop (Windows, macOS, Linux) and mobile
 - **Auto-Discovery**: Automatically discover peers on the same network
 - **Progress Tracking**: Real-time transfer progress with detailed status
-- **Configurable**: Custom signaling server, save locations, and device names
+- **Configurable**: Custom signaling server, save locations, device names, and log levels
 
 ## Installation
 
@@ -47,6 +49,9 @@ Then copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugins f
   - `Share current file` - Share the currently open file
   - `Share files...` - Open file picker
   - `Reconnect to server` - Manually reconnect
+  - `Pair with device` - Pair for cross-network sharing
+  - `Toggle connection` - Connect or disconnect from server
+- **Status Bar**: Click the status bar item for quick access to connect/disconnect, show peers, and pair
 
 ### Receiving Files
 
@@ -55,6 +60,17 @@ When someone sends you files:
 2. Review the files being sent
 3. Click "Accept" to receive or "Decline" to reject
 4. Files are saved to your configured save location (default: `PeerDrop/`)
+
+### Device Pairing
+
+Pair devices to share files across different networks:
+
+1. Run command `PeerDrop: Pair with device`
+2. Choose "Show pairing code" on one device
+3. Enter the 6-digit code on the other device
+4. Devices are now paired and can discover each other from anywhere
+
+Manage paired devices in Settings > PeerDrop > Paired Devices.
 
 ## Settings
 
@@ -66,6 +82,8 @@ When someone sends you files:
 | **Device Name** | Custom name for your device (auto-generated if empty) |
 | **Auto-accept from paired** | Automatically accept files from paired devices |
 | **Show Notifications** | Display notifications for transfers |
+| **Log Level** | Console logging verbosity (None, Errors, Warnings, Info, Debug) |
+| **Paired Devices** | View and remove paired devices |
 
 ## Self-Hosted Server
 

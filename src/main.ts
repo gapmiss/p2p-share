@@ -1,9 +1,10 @@
-import { Notice, Plugin, TFile, TFolder, addIcon } from 'obsidian';
+import { Menu, Notice, Plugin, TFile, TFolder, addIcon } from 'obsidian';
 import { PeerDropSettingTab } from './settings';
 import { PeerManager } from './peer-manager';
-import { PeerModal, FilePickerModal, TransferModal, IncomingTransferModal } from './modals';
-import type { PeerDropSettings, FileMetadata, TransferProgress } from './types';
+import { PeerModal, FilePickerModal, TransferModal, IncomingTransferModal, PairingModal } from './modals';
+import type { PeerDropSettings, FileMetadata, TransferProgress, PairedDevice } from './types';
 import { DEFAULT_SETTINGS } from './types';
+import { logger } from './logger';
 
 // Custom PeerDrop icon
 const PEERDROP_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
@@ -24,9 +25,13 @@ export default class PeerDropPlugin extends Plugin {
   private peerManager: PeerManager | null = null;
   private statusBarItem: HTMLElement | null = null;
   private activeTransferModal: TransferModal | null = null;
+  private activePairingModal: PairingModal | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
+
+    // Initialize logger level from settings
+    logger.setLevel(this.settings.logLevel);
 
     // Register custom icon
     addIcon('peerdrop', PEERDROP_ICON);
@@ -40,8 +45,14 @@ export default class PeerDropPlugin extends Plugin {
       this.showPeerModal();
     });
 
-    // Add status bar item
+    // Add status bar item with menu on click
     this.statusBarItem = this.addStatusBarItem();
+    this.statusBarItem.addClass('peerdrop-status-bar');
+    this.statusBarItem.onclick = (e) => this.showStatusBarContextMenu(e);
+    this.statusBarItem.oncontextmenu = (e) => {
+      e.preventDefault();
+      this.showStatusBarContextMenu(e);
+    };
     this.updateStatusBar();
 
     // Add commands
@@ -76,6 +87,18 @@ export default class PeerDropPlugin extends Plugin {
       id: 'peerdrop-reconnect',
       name: 'Reconnect to server',
       callback: () => this.reconnect(),
+    });
+
+    this.addCommand({
+      id: 'peerdrop-pair-device',
+      name: 'Pair with device',
+      callback: () => this.showPairingModal(),
+    });
+
+    this.addCommand({
+      id: 'peerdrop-toggle-connection',
+      name: 'Toggle connection',
+      callback: () => this.toggleConnection(),
     });
 
     // Register context menu for files
@@ -137,17 +160,17 @@ export default class PeerDropPlugin extends Plugin {
           new Notice(`PeerDrop: Received ${data.metadata.name}`);
         }
       } catch (error) {
-        console.error('PeerDrop: Error saving file', error);
+        logger.error('Error saving file', error);
         new Notice(`PeerDrop: Error saving ${data.metadata.name}`);
       }
     });
 
     this.peerManager.on('transfer-complete', () => {
-      console.log('PeerDrop: transfer-complete event, activeTransferModal:', !!this.activeTransferModal);
+      logger.debug('transfer-complete event, activeTransferModal:', !!this.activeTransferModal);
       if (this.activeTransferModal) {
         this.activeTransferModal.setComplete();
       } else {
-        console.warn('PeerDrop: No active transfer modal to update');
+        logger.warn('No active transfer modal to update');
       }
       if (this.settings.showNotifications) {
         new Notice('PeerDrop: Transfer complete!');
@@ -166,12 +189,44 @@ export default class PeerDropPlugin extends Plugin {
       this.activeTransferModal?.setError('Transfer rejected by peer');
       new Notice('PeerDrop: Transfer rejected');
     });
+
+    // Device pairing events
+    this.peerManager.on('pair-device-initiated', (data: { pairKey: string; roomSecret: string }) => {
+      this.activePairingModal?.setPairKey(data.pairKey, data.roomSecret);
+    });
+
+    this.peerManager.on('pair-device-joined', async (data: { roomSecret: string; peerId: string }) => {
+      // Save the pairing - peer info might not be available yet, will update when we see them
+      await this.addPairedDevice(data.roomSecret, 'Paired Device');
+
+      this.activePairingModal?.setPairingSuccess(data.roomSecret, 'Paired Device');
+      new Notice('PeerDrop: Device paired successfully!');
+    });
+
+    this.peerManager.on('pair-device-join-key-invalid', () => {
+      this.activePairingModal?.setPairingError('Invalid or expired pairing code.');
+    });
+
+    this.peerManager.on('pair-device-canceled', () => {
+      this.activePairingModal?.setPairingCanceled();
+    });
+
+    this.peerManager.on('secret-room-deleted', async (roomSecret: string) => {
+      // Other device unpaired - remove from our list
+      await this.removePairedDevice(roomSecret);
+      new Notice('PeerDrop: A paired device was removed');
+    });
+
+    this.peerManager.on('paired-device-identified', async (data: { roomSecret: string; displayName: string }) => {
+      // Update the paired device name now that we know it
+      await this.updatePairedDeviceName(data.roomSecret, data.displayName);
+    });
   }
 
   private async connectToServer(): Promise<void> {
     // Don't try to connect if no server URL is configured
     if (!this.settings.serverUrl || this.settings.serverUrl.trim() === '') {
-      console.log('PeerDrop: No server URL configured');
+      logger.info('No server URL configured');
       new Notice('PeerDrop: Please configure a server URL in settings');
       this.updateStatusBar();
       return;
@@ -180,7 +235,7 @@ export default class PeerDropPlugin extends Plugin {
     try {
       await this.peerManager?.connect();
     } catch (error) {
-      console.error('PeerDrop: Failed to connect', error);
+      logger.error('Failed to connect', error);
       new Notice('PeerDrop: Failed to connect to server. Check the URL and ensure the server accepts external connections.');
       this.updateStatusBar();
     }
@@ -209,9 +264,14 @@ export default class PeerDropPlugin extends Plugin {
   private showPeerModal(): void {
     if (!this.peerManager) return;
 
-    new PeerModal(this.app, this.peerManager, (peerId) => {
-      this.showFilePicker(peerId);
-    }).open();
+    new PeerModal(
+      this.app,
+      this.peerManager,
+      (peerId) => {
+        this.showFilePicker(peerId);
+      },
+      () => this.toggleConnection()
+    ).open();
   }
 
   private showFilePicker(targetPeerId?: string): void {
@@ -227,17 +287,27 @@ export default class PeerDropPlugin extends Plugin {
   private shareFiles(files: TFile[], folders: TFolder[] = []): void {
     if (!this.peerManager) return;
 
-    new PeerModal(this.app, this.peerManager, (peerId) => {
-      this.sendToPeer(peerId, files, folders);
-    }).open();
+    new PeerModal(
+      this.app,
+      this.peerManager,
+      (peerId) => {
+        this.sendToPeer(peerId, files, folders);
+      },
+      () => this.toggleConnection()
+    ).open();
   }
 
   private shareFolder(folder: TFolder): void {
     if (!this.peerManager) return;
 
-    new PeerModal(this.app, this.peerManager, (peerId) => {
-      this.sendToPeer(peerId, [], [folder]);
-    }).open();
+    new PeerModal(
+      this.app,
+      this.peerManager,
+      (peerId) => {
+        this.sendToPeer(peerId, [], [folder]);
+      },
+      () => this.toggleConnection()
+    ).open();
   }
 
   private async sendToPeer(peerId: string, files: TFile[], folders: TFolder[]): Promise<void> {
@@ -281,7 +351,7 @@ export default class PeerDropPlugin extends Plugin {
     try {
       await this.peerManager.sendFilesToPeer(peerId, allFiles);
     } catch (error) {
-      console.error('PeerDrop: Error sending files', error);
+      logger.error('Error sending files', error);
       this.activeTransferModal?.setError((error as Error).message);
       new Notice(`PeerDrop: Error sending files - ${(error as Error).message}`);
     }
@@ -352,8 +422,115 @@ export default class PeerDropPlugin extends Plugin {
     return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
   }
 
+  // ============================================================================
+  // DEVICE PAIRING
+  // ============================================================================
+
+  private showPairingModal(): void {
+    if (!this.peerManager) return;
+
+    if (!this.peerManager.isConnected()) {
+      new Notice('PeerDrop: Not connected to server. Please reconnect first.');
+      return;
+    }
+
+    this.activePairingModal = new PairingModal(this.app, {
+      onInitiate: () => {
+        this.peerManager?.pairDeviceInitiate();
+      },
+      onJoin: (pairKey: string) => {
+        this.peerManager?.pairDeviceJoin(pairKey);
+      },
+      onCancel: () => {
+        this.peerManager?.pairDeviceCancel();
+      },
+      onSuccess: async (roomSecret: string, peerDisplayName: string) => {
+        await this.addPairedDevice(roomSecret, peerDisplayName);
+      },
+    });
+    this.activePairingModal.open();
+  }
+
+  async addPairedDevice(roomSecret: string, displayName: string): Promise<void> {
+    // Check if already paired
+    if (this.settings.pairedDevices.some((d) => d.roomSecret === roomSecret)) {
+      return;
+    }
+
+    const pairedDevice: PairedDevice = {
+      roomSecret,
+      displayName,
+      pairedAt: Date.now(),
+    };
+
+    this.settings.pairedDevices.push(pairedDevice);
+    await this.saveSettings();
+  }
+
+  async removePairedDevice(roomSecret: string): Promise<void> {
+    this.settings.pairedDevices = this.settings.pairedDevices.filter(
+      (d) => d.roomSecret !== roomSecret
+    );
+    this.peerManager?.deleteRoomSecret(roomSecret);
+    await this.saveSettings();
+  }
+
+  async updatePairedDeviceName(roomSecret: string, displayName: string): Promise<void> {
+    const device = this.settings.pairedDevices.find((d) => d.roomSecret === roomSecret);
+    if (device && device.displayName !== displayName) {
+      device.displayName = displayName;
+      await this.saveSettings();
+      logger.debug('Updated paired device name to', displayName);
+    }
+  }
+
   isConnected(): boolean {
     return this.peerManager?.isConnected() ?? false;
+  }
+
+  async toggleConnection(): Promise<void> {
+    if (!this.peerManager) return;
+
+    if (this.peerManager.isConnected()) {
+      this.peerManager.disconnect();
+      new Notice('PeerDrop: Disconnected');
+    } else {
+      await this.connectToServer();
+      if (this.peerManager.isConnected()) {
+        new Notice('PeerDrop: Connected');
+      }
+    }
+    this.updateStatusBar();
+  }
+
+  private showStatusBarContextMenu(e: MouseEvent): void {
+    const menu = new Menu();
+    const isConnected = this.peerManager?.isConnected() ?? false;
+
+    menu.addItem((item) =>
+      item
+        .setTitle(isConnected ? 'Disconnect' : 'Connect')
+        .setIcon(isConnected ? 'wifi-off' : 'wifi')
+        .onClick(() => this.toggleConnection())
+    );
+
+    menu.addSeparator();
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Show peers')
+        .setIcon('users')
+        .onClick(() => this.showPeerModal())
+    );
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Pair with device')
+        .setIcon('link')
+        .onClick(() => this.showPairingModal())
+    );
+
+    menu.showAtMouseEvent(e);
   }
 
   async loadSettings(): Promise<void> {
@@ -363,5 +540,6 @@ export default class PeerDropPlugin extends Plugin {
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
     this.peerManager?.updateSettings(this.settings);
+    logger.setLevel(this.settings.logLevel);
   }
 }

@@ -5,12 +5,21 @@ import type { PeerManager } from '../peer-manager';
 export class PeerModal extends Modal {
   private peerManager: PeerManager;
   private onSelect: (peerId: string) => void;
+  private onToggleConnection: () => Promise<void>;
   private peersContainer: HTMLElement | null = null;
+  private statusEl: HTMLElement | null = null;
+  private connectBtn: HTMLButtonElement | null = null;
 
-  constructor(app: App, peerManager: PeerManager, onSelect: (peerId: string) => void) {
+  constructor(
+    app: App,
+    peerManager: PeerManager,
+    onSelect: (peerId: string) => void,
+    onToggleConnection: () => Promise<void>
+  ) {
     super(app);
     this.peerManager = peerManager;
     this.onSelect = onSelect;
+    this.onToggleConnection = onToggleConnection;
   }
 
   onOpen(): void {
@@ -22,9 +31,18 @@ export class PeerModal extends Modal {
     const header = contentEl.createDiv({ cls: 'peerdrop-modal-header' });
     header.createEl('h2', { text: 'Select Peer' });
 
+    // Our display name
+    const displayName = this.peerManager.getDisplayName();
+    if (displayName) {
+      header.createDiv({
+        cls: 'peerdrop-our-name',
+        text: `You appear as: ${displayName}`,
+      });
+    }
+
     // Connection status
-    const statusEl = header.createDiv({ cls: 'peerdrop-connection-status' });
-    this.updateConnectionStatus(statusEl);
+    this.statusEl = header.createDiv({ cls: 'peerdrop-connection-status' });
+    this.updateConnectionStatus();
 
     // Peers container
     this.peersContainer = contentEl.createDiv({ cls: 'peerdrop-peers-container' });
@@ -32,20 +50,48 @@ export class PeerModal extends Modal {
 
     // Listen for peer updates
     this.peerManager.on('peers-updated', () => this.renderPeers());
-    this.peerManager.on('server-connected', () => this.updateConnectionStatus(statusEl));
-    this.peerManager.on('server-disconnected', () => this.updateConnectionStatus(statusEl));
+    this.peerManager.on('server-connected', () => {
+      this.updateConnectionStatus();
+      this.renderPeers();
+    });
+    this.peerManager.on('server-disconnected', () => {
+      this.updateConnectionStatus();
+      this.renderPeers();
+    });
 
-    // Footer with refresh button
+    // Footer with connect/disconnect and refresh buttons
     const footer = contentEl.createDiv({ cls: 'peerdrop-modal-footer' });
+
+    this.connectBtn = footer.createEl('button');
+    this.updateConnectButton();
+    this.connectBtn.onclick = async () => {
+      if (this.connectBtn) {
+        this.connectBtn.disabled = true;
+        this.connectBtn.setText('...');
+      }
+      await this.onToggleConnection();
+      this.updateConnectButton();
+      this.updateConnectionStatus();
+    };
+
     const refreshBtn = footer.createEl('button', { text: 'Refresh' });
     refreshBtn.onclick = () => this.renderPeers();
   }
 
-  private updateConnectionStatus(el: HTMLElement): void {
-    el.empty();
+  private updateConnectButton(): void {
+    if (!this.connectBtn) return;
     const isConnected = this.peerManager.isConnected();
-    const dot = el.createSpan({ cls: `peerdrop-status-dot ${isConnected ? 'connected' : 'disconnected'}` });
-    el.createSpan({ text: isConnected ? 'Connected' : 'Disconnected' });
+    this.connectBtn.setText(isConnected ? 'Disconnect' : 'Connect');
+    this.connectBtn.disabled = false;
+    this.connectBtn.toggleClass('mod-warning', isConnected);
+  }
+
+  private updateConnectionStatus(): void {
+    if (!this.statusEl) return;
+    this.statusEl.empty();
+    const isConnected = this.peerManager.isConnected();
+    this.statusEl.createSpan({ cls: `peerdrop-status-dot ${isConnected ? 'connected' : 'disconnected'}` });
+    this.statusEl.createSpan({ text: isConnected ? 'Connected' : 'Disconnected' });
   }
 
   private renderPeers(): void {

@@ -148,7 +148,7 @@ export class TransferModal extends Modal {
       this.statusText.addClass('complete');
     }
 
-    // Update all file statuses
+    // Update all file statuses and progress bars to 100%
     const items = this.progressContainer?.querySelectorAll('.peerdrop-file-progress-item');
     items?.forEach((item) => {
       const fill = item.querySelector('.peerdrop-progress-fill') as HTMLElement;
@@ -160,9 +160,17 @@ export class TransferModal extends Modal {
       }
     });
 
+    // Always set overall progress to 100% on complete
     if (this.overallProgress) {
       const fill = this.overallProgress.querySelector('.peerdrop-progress-fill') as HTMLElement;
-      if (fill) fill.style.width = '100%';
+      if (fill) {
+        fill.style.width = '100%';
+      }
+    }
+
+    // Update status text to show all files complete
+    if (this.statusText) {
+      this.statusText.setText(`Complete: ${this.files.length}/${this.files.length} files`);
     }
 
     // Change cancel to close
