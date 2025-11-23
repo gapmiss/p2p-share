@@ -69,10 +69,15 @@ When someone sends you files:
 
 ## Self-Hosted Server
 
-You can use your own PairDrop server:
+You can use your own PairDrop signaling server for privacy or reliability:
 
-1. Deploy PairDrop following the [official instructions](https://github.com/schlagmichdoch/pairdrop#deployment)
+1. See **[DEPLOYMENT.md](DEPLOYMENT.md)** for detailed hosting options including:
+   - Docker (recommended)
+   - Fly.io, Railway, Render (free tiers)
+   - VPS with Nginx reverse proxy
 2. Update the "Signaling Server URL" in plugin settings to your server's WebSocket URL
+
+The signaling server only handles peer discovery - actual file data transfers directly between peers via WebRTC.
 
 ## How It Works
 
