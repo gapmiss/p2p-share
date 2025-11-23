@@ -75,7 +75,16 @@ export class PeerModal extends Modal {
     };
 
     const refreshBtn = footer.createEl('button', { text: 'Refresh' });
-    refreshBtn.onclick = () => this.renderPeers();
+    refreshBtn.onclick = async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.setText('Refreshing...');
+      try {
+        await this.peerManager.refresh();
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.setText('Refresh');
+      }
+    };
   }
 
   private updateConnectButton(): void {

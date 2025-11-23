@@ -27,7 +27,14 @@ export class PeerManager extends Events {
     });
 
     this.signaling.on('disconnected', () => {
+      // Clear all peers and connections on disconnect
+      this.peers.clear();
+      for (const connection of this.connections.values()) {
+        connection.close();
+      }
+      this.connections.clear();
       this.trigger('server-disconnected');
+      this.trigger('peers-updated', []);
     });
 
     this.signaling.on('peers', (data: { peers: PeerInfo[]; roomType: string; roomId: string }) => {
@@ -182,6 +189,17 @@ export class PeerManager extends Events {
 
   isConnected(): boolean {
     return this.signaling.isConnected();
+  }
+
+  /**
+   * Refresh the peer list by reconnecting to the server.
+   * This clears stale peers and gets a fresh list.
+   */
+  async refresh(): Promise<void> {
+    if (this.isConnected()) {
+      this.signaling.disconnect();
+    }
+    await this.signaling.connect();
   }
 
   getPeers(): PeerInfo[] {
