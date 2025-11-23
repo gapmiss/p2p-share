@@ -1,0 +1,416 @@
+/* PeerDrop Plugin Styles */
+
+/* Server Notice */
+.peerdrop-server-notice {
+  background-color: var(--background-modifier-error);
+  border: 1px solid var(--background-modifier-error-hover);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.peerdrop-notice-text {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-normal);
+}
+
+.peerdrop-server-notice a {
+  color: var(--text-accent);
+}
+
+/* Status Bar */
+.peerdrop-disconnected {
+  color: var(--text-error);
+}
+
+/* Modal Common Styles */
+.peerdrop-modal {
+  padding: 1rem;
+}
+
+.peerdrop-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.peerdrop-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.peerdrop-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Connection Status */
+.peerdrop-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.peerdrop-status-dot.connected {
+  background-color: var(--color-green);
+}
+
+.peerdrop-status-dot.disconnected {
+  background-color: var(--color-red);
+}
+
+/* Peer List */
+.peerdrop-peers-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.peerdrop-peer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.peerdrop-peer-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.peerdrop-peer-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--background-modifier-border);
+}
+
+.peerdrop-peer-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.peerdrop-peer-info {
+  flex: 1;
+}
+
+.peerdrop-peer-name {
+  font-weight: 500;
+}
+
+.peerdrop-peer-details {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-rtc-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--color-green);
+  color: white;
+  font-weight: 500;
+}
+
+.peerdrop-empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-empty-state p {
+  margin: 0.5rem 0;
+}
+
+.peerdrop-hint {
+  font-size: 0.85rem;
+}
+
+/* File Picker */
+.peerdrop-file-picker {
+  min-width: 500px;
+}
+
+.peerdrop-path-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.peerdrop-breadcrumb-item {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-accent);
+}
+
+.peerdrop-breadcrumb-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.peerdrop-breadcrumb-sep {
+  color: var(--text-muted);
+}
+
+.peerdrop-file-list {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.peerdrop-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.peerdrop-file-item:last-child {
+  border-bottom: none;
+}
+
+.peerdrop-file-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.peerdrop-file-icon {
+  display: flex;
+  color: var(--text-muted);
+}
+
+.peerdrop-file-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.peerdrop-file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peerdrop-folder-name {
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+.peerdrop-folder-name:hover {
+  text-decoration: underline;
+}
+
+.peerdrop-file-size {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-selection-info {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-empty-folder {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+/* Transfer Modal */
+.peerdrop-transfer-modal {
+  min-width: 400px;
+}
+
+.peerdrop-transfer-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.peerdrop-transfer-peer {
+  margin-bottom: 0.5rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-peer-name-highlight {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+.peerdrop-transfer-summary {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-progress-overall {
+  margin-bottom: 1rem;
+}
+
+.peerdrop-progress-bar {
+  height: 8px;
+  background-color: var(--background-modifier-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.peerdrop-progress-fill {
+  height: 100%;
+  background-color: var(--interactive-accent);
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+
+.peerdrop-transfer-status {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.peerdrop-transfer-status.complete {
+  color: var(--color-green);
+}
+
+.peerdrop-transfer-status.error {
+  color: var(--color-red);
+}
+
+.peerdrop-file-progress-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.peerdrop-file-progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.peerdrop-file-progress-item:last-child {
+  border-bottom: none;
+}
+
+.peerdrop-file-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.peerdrop-file-progress-name {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 250px;
+}
+
+.peerdrop-file-progress-size {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.peerdrop-file-progress-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.peerdrop-file-progress-status.complete {
+  color: var(--color-green);
+}
+
+/* Incoming Transfer Modal */
+.peerdrop-incoming-modal {
+  min-width: 350px;
+}
+
+.peerdrop-incoming-icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--interactive-accent);
+}
+
+.peerdrop-incoming-peer {
+  margin-bottom: 1rem;
+}
+
+.peerdrop-incoming-summary {
+  margin-bottom: 0.5rem;
+}
+
+.peerdrop-incoming-file-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.peerdrop-incoming-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.peerdrop-incoming-file-item:last-child {
+  border-bottom: none;
+}
+
+.peerdrop-incoming-more {
+  padding: 0.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.peerdrop-incoming-actions {
+  justify-content: space-between;
+}
+
+.peerdrop-btn-reject {
+  background-color: var(--background-modifier-error);
+  color: var(--text-on-accent);
+}
+
+.peerdrop-btn-reject:hover {
+  background-color: var(--background-modifier-error-hover);
+}
+
+/* Settings */
+.peerdrop-status-connected {
+  color: var(--color-green);
+}
+
+.peerdrop-status-disconnected {
+  color: var(--color-red);
+}
