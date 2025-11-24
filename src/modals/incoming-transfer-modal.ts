@@ -67,7 +67,7 @@ export class IncomingTransferModal extends Modal {
     }
 
     // Action buttons
-    const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer peerdrop-incoming-actions' });
+    const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer p2p-share-incoming-actions' });
 
     const rejectBtn = footer.createEl('button', { text: 'Decline', cls: 'p2p-share-btn-reject' });
     rejectBtn.onclick = () => {

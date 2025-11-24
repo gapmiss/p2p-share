@@ -99,7 +99,7 @@ export class PeerModal extends Modal {
     if (!this.statusEl) return;
     this.statusEl.empty();
     const isConnected = this.peerManager.isConnected();
-    this.statusEl.createSpan({ cls: `peerdrop-status-dot ${isConnected ? 'connected' : 'disconnected'}` });
+    this.statusEl.createSpan({ cls: `p2p-share-status-dot ${isConnected ? 'connected' : 'disconnected'}` });
     this.statusEl.createSpan({ text: isConnected ? 'Connected' : 'Disconnected' });
   }
 

@@ -249,11 +249,11 @@ export default class P2PSharePlugin extends Plugin {
     const peerCount = this.peerManager?.getPeers().length ?? 0;
 
     if (isConnected) {
-      this.statusBarItem.setText(`PeerDrop: ${peerCount} peer${peerCount !== 1 ? 's' : ''}`);
-      this.statusBarItem.removeClass('peerdrop-disconnected');
+      this.statusBarItem.setText(`P2P Share: ${peerCount} peer${peerCount !== 1 ? 's' : ''}`);
+      this.statusBarItem.removeClass('p2p-share-disconnected');
     } else {
-      this.statusBarItem.setText('PeerDrop: Offline');
-      this.statusBarItem.addClass('peerdrop-disconnected');
+      this.statusBarItem.setText('P2P Share: Offline');
+      this.statusBarItem.addClass('p2p-share-disconnected');
     }
   }
 
@@ -349,7 +349,7 @@ export default class P2PSharePlugin extends Plugin {
     } catch (error) {
       logger.error('Error sending files', error);
       this.activeTransferModal?.setError((error as Error).message);
-      new Notice(`PeerDrop: Error sending files - ${(error as Error).message}`);
+      new Notice(`P2P Share: Error sending files - ${(error as Error).message}`);
     }
   }
 

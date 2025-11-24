@@ -147,7 +147,7 @@ npm run build    # Production build
 - Use `logger` from `src/logger.ts` (not console.log directly)
 - Log levels: `debug`, `info`, `warn`, `error`, `none`
 - User configurable in settings
-- Show user-facing errors with `new Notice('PeerDrop: ...')`
+- Show user-facing errors with `new Notice('P2P Share: ...')`
 - Use timeouts for async operations that may hang
 
 ## Common Issues

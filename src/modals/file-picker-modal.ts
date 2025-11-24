@@ -146,7 +146,7 @@ export class FilePickerModal extends Modal {
         e.stopPropagation();
         this.currentPath = `/${file.path}`;
         this.renderFileList();
-        const pathContainer = this.contentEl.querySelector('.peerdrop-path-container');
+        const pathContainer = this.contentEl.querySelector('.p2p-share-path-container');
         if (pathContainer) this.renderBreadcrumb(pathContainer as HTMLElement);
       };
     }

@@ -222,7 +222,7 @@ PairDrop shows image thumbnails in transfer requests. Low priority but nice UX:
 Begin new session with:
 
 ```
-I'm working on the PeerDrop Obsidian plugin. I need to implement PairDrop
+I'm working on the P2P Share plugin. I need to implement PairDrop
 protocol compatibility so the plugin can transfer files with PairDrop
 web/mobile apps.
 

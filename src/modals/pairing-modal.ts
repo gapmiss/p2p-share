@@ -208,7 +208,7 @@ export class PairingModal extends Modal {
     const { contentEl } = this;
 
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
-    const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon peerdrop-success' });
+    const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon p2p-share-success' });
     setIcon(iconContainer, 'check');
     header.createEl('h2', { text: 'Paired Successfully!' });
 
@@ -229,7 +229,7 @@ export class PairingModal extends Modal {
     const { contentEl } = this;
 
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
-    const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon peerdrop-error' });
+    const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon p2p-share-error' });
     setIcon(iconContainer, 'x');
     header.createEl('h2', { text: 'Pairing Failed' });
 

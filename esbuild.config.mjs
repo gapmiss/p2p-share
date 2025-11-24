@@ -3,7 +3,7 @@ import process from "process";
 import builtins from "builtin-modules";
 
 const banner = `/*
-PeerDrop for Obsidian
+P2P Share for Obsidian
 Share files between vaults using WebRTC
 */
 `;

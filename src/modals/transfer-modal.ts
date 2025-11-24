@@ -104,8 +104,8 @@ export class TransferModal extends Modal {
     const escapedName = CSS.escape(progress.fileName);
     const item = this.progressContainer?.querySelector(`[data-file="${escapedName}"]`);
     if (item) {
-      const fill = item.querySelector('.peerdrop-progress-fill') as HTMLElement;
-      const status = item.querySelector('.peerdrop-file-progress-status') as HTMLElement;
+      const fill = item.querySelector('.p2p-share-progress-fill') as HTMLElement;
+      const status = item.querySelector('.p2p-share-file-progress-status') as HTMLElement;
       if (fill) {
         fill.style.width = `${progress.progress * 100}%`;
       }
@@ -125,7 +125,7 @@ export class TransferModal extends Modal {
       this.files.length;
 
     if (this.overallProgress) {
-      const fill = this.overallProgress.querySelector('.peerdrop-progress-fill') as HTMLElement;
+      const fill = this.overallProgress.querySelector('.p2p-share-progress-fill') as HTMLElement;
       if (fill) {
         fill.style.width = `${totalProgress * 100}%`;
       }
@@ -149,10 +149,10 @@ export class TransferModal extends Modal {
     }
 
     // Update all file statuses and progress bars to 100%
-    const items = this.progressContainer?.querySelectorAll('.peerdrop-file-progress-item');
+    const items = this.progressContainer?.querySelectorAll('.p2p-share-file-progress-item');
     items?.forEach((item) => {
-      const fill = item.querySelector('.peerdrop-progress-fill') as HTMLElement;
-      const status = item.querySelector('.peerdrop-file-progress-status') as HTMLElement;
+      const fill = item.querySelector('.p2p-share-progress-fill') as HTMLElement;
+      const status = item.querySelector('.p2p-share-file-progress-status') as HTMLElement;
       if (fill) fill.style.width = '100%';
       if (status) {
         status.setText('Complete');
@@ -162,7 +162,7 @@ export class TransferModal extends Modal {
 
     // Always set overall progress to 100% on complete
     if (this.overallProgress) {
-      const fill = this.overallProgress.querySelector('.peerdrop-progress-fill') as HTMLElement;
+      const fill = this.overallProgress.querySelector('.p2p-share-progress-fill') as HTMLElement;
       if (fill) {
         fill.style.width = '100%';
       }
@@ -174,7 +174,7 @@ export class TransferModal extends Modal {
     }
 
     // Change cancel to close
-    const cancelBtn = this.contentEl.querySelector('.peerdrop-modal-footer button');
+    const cancelBtn = this.contentEl.querySelector('.p2p-share-modal-footer button');
     if (cancelBtn) {
       cancelBtn.textContent = 'Close';
     }

@@ -131,10 +131,10 @@ export class P2PShareSettingTab extends PluginSettingTab {
     // Connection Status
     containerEl.createEl('h3', { text: 'Connection Status' });
 
-    const statusContainer = containerEl.createDiv({ cls: 'peerdrop-status' });
+    const statusContainer = containerEl.createDiv({ cls: 'p2p-share-status' });
     const statusText = statusContainer.createSpan({
       text: this.plugin.isConnected() ? 'Connected' : 'Disconnected',
-      cls: this.plugin.isConnected() ? 'peerdrop-status-connected' : 'peerdrop-status-disconnected'
+      cls: this.plugin.isConnected() ? 'p2p-share-status-connected' : 'p2p-share-status-disconnected'
     });
 
     new Setting(containerEl)
@@ -147,8 +147,8 @@ export class P2PShareSettingTab extends PluginSettingTab {
             await this.plugin.reconnect();
             statusText.setText(this.plugin.isConnected() ? 'Connected' : 'Disconnected');
             statusText.className = this.plugin.isConnected()
-              ? 'peerdrop-status-connected'
-              : 'peerdrop-status-disconnected';
+              ? 'p2p-share-status-connected'
+              : 'p2p-share-status-disconnected';
           })
       );
 
@@ -158,13 +158,13 @@ export class P2PShareSettingTab extends PluginSettingTab {
     const pairedDevices = this.plugin.settings.pairedDevices;
 
     if (pairedDevices.length === 0) {
-      const emptyState = containerEl.createDiv({ cls: 'peerdrop-paired-empty' });
+      const emptyState = containerEl.createDiv({ cls: 'p2p-share-paired-empty' });
       emptyState.createEl('p', {
         text: 'No paired devices. Use "Pair with device" command to pair across networks.',
-        cls: 'peerdrop-paired-empty-text',
+        cls: 'p2p-share-paired-empty-text',
       });
     } else {
-      const pairedList = containerEl.createDiv({ cls: 'peerdrop-paired-list' });
+      const pairedList = containerEl.createDiv({ cls: 'p2p-share-paired-list' });
 
       for (const device of pairedDevices) {
         this.renderPairedDevice(pairedList, device);
@@ -198,21 +198,21 @@ export class P2PShareSettingTab extends PluginSettingTab {
   }
 
   private renderPairedDevice(container: HTMLElement, device: PairedDevice): void {
-    const item = container.createDiv({ cls: 'peerdrop-paired-item' });
+    const item = container.createDiv({ cls: 'p2p-share-paired-item' });
 
-    const info = item.createDiv({ cls: 'peerdrop-paired-info' });
-    const iconEl = info.createDiv({ cls: 'peerdrop-paired-icon' });
+    const info = item.createDiv({ cls: 'p2p-share-paired-info' });
+    const iconEl = info.createDiv({ cls: 'p2p-share-paired-icon' });
     setIcon(iconEl, 'smartphone');
 
-    const details = info.createDiv({ cls: 'peerdrop-paired-details' });
-    details.createDiv({ cls: 'peerdrop-paired-name', text: device.displayName });
+    const details = info.createDiv({ cls: 'p2p-share-paired-details' });
+    details.createDiv({ cls: 'p2p-share-paired-name', text: device.displayName });
     details.createDiv({
-      cls: 'peerdrop-paired-date',
+      cls: 'p2p-share-paired-date',
       text: `Paired ${this.formatDate(device.pairedAt)}`,
     });
 
     const removeBtn = item.createEl('button', {
-      cls: 'peerdrop-paired-remove',
+      cls: 'p2p-share-paired-remove',
       attr: { 'aria-label': 'Remove pairing' },
     });
     setIcon(removeBtn, 'x');
