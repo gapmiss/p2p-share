@@ -446,3 +446,108 @@
 .p2p-share-status-disconnected {
   color: var(--color-red);
 }
+
+/* Pairing Modal */
+.p2p-share-pairing-modal {
+  min-width: 350px;
+}
+
+.p2p-share-pairing-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.p2p-share-pairing-description {
+  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+}
+
+.p2p-share-pairing-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.p2p-share-pairing-buttons button {
+  flex: 1;
+}
+
+.p2p-share-pairing-code-container {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.p2p-share-pairing-code {
+  font-size: 2rem;
+  font-weight: 600;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.3em;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  background-color: var(--background-secondary);
+  border: 2px solid var(--background-modifier-border);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  user-select: all;
+}
+
+.p2p-share-pairing-code:hover,
+.p2p-share-pairing-code:focus-visible {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.p2p-share-pairing-instruction {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.p2p-share-pairing-instruction p {
+  margin: 0.5rem 0;
+}
+
+.p2p-share-pairing-warning {
+  color: var(--text-warning);
+  font-weight: 500;
+}
+
+.p2p-share-pairing-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.p2p-share-pairing-input-container {
+  margin: 1.5rem 0;
+}
+
+.p2p-share-pairing-input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.5rem;
+  text-align: center;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.5em;
+  border-radius: 6px;
+}
+
+.p2p-share-pairing-success-message,
+.p2p-share-pairing-error-message {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.p2p-share-pairing-success-message p,
+.p2p-share-pairing-error-message p {
+  margin: 0.5rem 0;
+}
+
+.p2p-share-pairing-icon.p2p-share-success svg {
+  color: var(--color-green);
+}
+
+.p2p-share-pairing-icon.p2p-share-error svg {
+  color: var(--color-red);
+}

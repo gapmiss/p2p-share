@@ -8,6 +8,9 @@ export class PairingModal extends Modal {
   private roomSecret: string | null = null;
   private errorMessage: string | null = null;
   private inputEl: HTMLInputElement | null = null;
+  private countdownInterval: number | null = null;
+  private countdownEl: HTMLElement | null = null;
+  private timeRemaining = 60;
 
   private onInitiate: () => void;
   private onJoin: (pairKey: string) => void;
@@ -40,6 +43,7 @@ export class PairingModal extends Modal {
     if (this.state === 'show-code' || this.state === 'enter-code') {
       this.onCancel();
     }
+    this.stopCountdown();
     this.contentEl.empty();
   }
 
@@ -115,17 +119,30 @@ export class PairingModal extends Modal {
 
     if (this.pairKey) {
       const codeContainer = contentEl.createDiv({ cls: 'p2p-share-pairing-code-container' });
-      const codeEl = codeContainer.createDiv({ cls: 'p2p-share-pairing-code' });
+      const codeEl = codeContainer.createDiv({
+        cls: 'p2p-share-pairing-code',
+        attr: { tabindex: '0', role: 'button', 'aria-label': 'Click to copy pairing code' }
+      });
       codeEl.setText(this.formatPairKey(this.pairKey));
+
+      // Make code copyable on click
+      codeEl.onclick = () => this.copyPairKey();
+      codeEl.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.copyPairKey();
+        }
+      };
 
       const instruction = contentEl.createDiv({ cls: 'p2p-share-pairing-instruction' });
       instruction.createEl('p', {
         text: 'Enter this code on the other device to pair.',
       });
-      instruction.createEl('p', {
-        text: 'The code expires in 60 seconds.',
+
+      this.countdownEl = instruction.createEl('p', {
         cls: 'p2p-share-pairing-warning',
       });
+      this.startCountdown();
     } else {
       const loading = contentEl.createDiv({ cls: 'p2p-share-pairing-loading' });
       loading.createEl('p', { text: 'Generating pairing code...' });
@@ -254,6 +271,54 @@ export class PairingModal extends Modal {
   private formatPairKey(key: string): string {
     // Format as "XXX XXX" for readability
     return key.slice(0, 3) + ' ' + key.slice(3);
+  }
+
+  private async copyPairKey(): Promise<void> {
+    if (!this.pairKey) return;
+
+    try {
+      await navigator.clipboard.writeText(this.pairKey);
+      // Show brief feedback
+      const codeEl = this.contentEl.querySelector('.p2p-share-pairing-code') as HTMLElement;
+      if (codeEl) {
+        const originalText = codeEl.textContent;
+        codeEl.textContent = '✓ Copied!';
+        setTimeout(() => {
+          codeEl.textContent = originalText;
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Failed to copy pairing code:', error);
+    }
+  }
+
+  private startCountdown(): void {
+    this.stopCountdown();
+    this.timeRemaining = 60;
+    this.updateCountdownDisplay();
+
+    this.countdownInterval = window.setInterval(() => {
+      this.timeRemaining--;
+      this.updateCountdownDisplay();
+
+      if (this.timeRemaining <= 0) {
+        this.stopCountdown();
+        this.setPairingError('Pairing code expired. Please try again.');
+      }
+    }, 1000);
+  }
+
+  private stopCountdown(): void {
+    if (this.countdownInterval !== null) {
+      window.clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+  }
+
+  private updateCountdownDisplay(): void {
+    if (this.countdownEl) {
+      this.countdownEl.textContent = `The code expires in ${this.timeRemaining} second${this.timeRemaining !== 1 ? 's' : ''}.`;
+    }
   }
 
   // ============================================================================
