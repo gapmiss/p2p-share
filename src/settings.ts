@@ -71,45 +71,8 @@ export class P2PShareSettingTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl)
-      .setName('Device name')
-      .setDesc('Custom name for this device (leave empty for auto-generated)')
-      .addText((text) =>
-        text
-          .setPlaceholder('Auto-generated')
-          .setValue(this.plugin.settings.deviceName)
-          .onChange(async (value) => {
-            this.plugin.settings.deviceName = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
     // Behavior Settings
     containerEl.createEl('h3', { text: 'Behavior' });
-
-    new Setting(containerEl)
-      .setName('Auto-accept from paired devices')
-      .setDesc('Automatically accept incoming files from paired devices')
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoAcceptFromPaired)
-          .onChange(async (value) => {
-            this.plugin.settings.autoAcceptFromPaired = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName('Show notifications')
-      .setDesc('Show notifications for incoming transfers')
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showNotifications)
-          .onChange(async (value) => {
-            this.plugin.settings.showNotifications = value;
-            await this.plugin.saveSettings();
-          })
-      );
 
     new Setting(containerEl)
       .setName('Log level')
@@ -210,6 +173,21 @@ export class P2PShareSettingTab extends PluginSettingTab {
       cls: 'p2p-share-paired-date',
       text: `Paired ${this.formatDate(device.pairedAt)}`,
     });
+
+    const controls = item.createDiv({ cls: 'p2p-share-paired-controls' });
+
+    // Auto-accept toggle
+    new Setting(controls)
+      .setName('Auto-accept')
+      .setDesc('Automatically accept transfers from this device')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(device.autoAccept)
+          .onChange(async (value) => {
+            await this.plugin.updatePairedDeviceAutoAccept(device.roomSecret, value);
+            this.display(); // Refresh
+          })
+      );
 
     const removeBtn = item.createEl('button', {
       cls: 'p2p-share-paired-remove',

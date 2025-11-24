@@ -539,14 +539,6 @@ export class RTCPeer extends Events {
         this.trigger('transfer-rejected');
         break;
 
-      // === Display name change ===
-      case 'display-name-changed':
-        this.trigger('display-name-changed', {
-          peerId: this.peerId,
-          displayName: message.displayName as string,
-        });
-        break;
-
       default:
         logger.warn('Unknown message type', message.type);
     }

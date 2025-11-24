@@ -50,11 +50,17 @@
 }
 
 /* Connection Status */
-.p2p-share-connection-status {
+.p2p-share-status-container {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-left: auto;
+}
+
+.p2p-share-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.85rem;
   color: var(--text-muted);
 }
@@ -71,6 +77,26 @@
 
 .p2p-share-status-dot.disconnected {
   background-color: var(--color-red);
+}
+
+.p2p-share-menu-btn {
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.p2p-share-menu-btn:hover,
+.p2p-share-menu-btn:focus-visible {
+  opacity: 1;
+  background-color: var(--background-modifier-hover);
+  outline: none;
+}
+
+.p2p-share-menu-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Peer List */
@@ -91,6 +117,12 @@
 
 .p2p-share-peer-item:hover {
   background-color: var(--background-modifier-hover);
+}
+
+.p2p-share-peer-item:focus-visible {
+  background-color: var(--background-modifier-hover);
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
 }
 
 .p2p-share-peer-icon {

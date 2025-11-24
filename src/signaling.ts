@@ -12,7 +12,6 @@ interface WsConfig {
 export class SignalingClient extends Events {
   private ws: WebSocket | null = null;
   private serverUrl: string;
-  private deviceName: string;
   private reconnectAttempt = 0;
   private peerId: string | null = null;
   private peerIdHash: string | null = null;
@@ -23,10 +22,9 @@ export class SignalingClient extends Events {
   private currentRoomId: string | null = null;
   private roomSecrets: string[] = [];
 
-  constructor(serverUrl: string, deviceName: string) {
+  constructor(serverUrl: string) {
     super();
     this.serverUrl = serverUrl;
-    this.deviceName = deviceName;
   }
 
   /**
@@ -360,9 +358,5 @@ export class SignalingClient extends Events {
 
   updateServerUrl(url: string): void {
     this.serverUrl = url;
-  }
-
-  updateDeviceName(name: string): void {
-    this.deviceName = name;
   }
 }

@@ -15,7 +15,7 @@ export class PeerManager extends Events {
     super();
     this.vault = vault;
     this.settings = settings;
-    this.signaling = new SignalingClient(settings.serverUrl, settings.deviceName);
+    this.signaling = new SignalingClient(settings.serverUrl);
     // Set room secrets from paired devices before connecting
     this.signaling.setRoomSecrets(settings.pairedDevices.map((d) => d.roomSecret));
     this.setupSignalingHandlers();
@@ -159,16 +159,6 @@ export class PeerManager extends Events {
     peer.on('transfer-rejected', () => {
       this.trigger('transfer-rejected', peer.getPeerId());
     });
-
-    peer.on('display-name-changed', (data: { peerId: string; displayName: string }) => {
-      // Update peer info in our map
-      const peerInfo = this.peers.get(data.peerId);
-      if (peerInfo) {
-        peerInfo.name.displayName = data.displayName;
-        this.trigger('peers-updated', Array.from(this.peers.values()));
-      }
-      this.trigger('peer-display-name-changed', data);
-    });
   }
 
   async connect(): Promise<void> {
@@ -189,17 +179,6 @@ export class PeerManager extends Events {
 
   isConnected(): boolean {
     return this.signaling.isConnected();
-  }
-
-  /**
-   * Refresh the peer list by reconnecting to the server.
-   * This clears stale peers and gets a fresh list.
-   */
-  async refresh(): Promise<void> {
-    if (this.isConnected()) {
-      this.signaling.disconnect();
-    }
-    await this.signaling.connect();
   }
 
   getPeers(): PeerInfo[] {
@@ -368,7 +347,6 @@ export class PeerManager extends Events {
   updateSettings(settings: P2PShareSettings): void {
     this.settings = settings;
     this.signaling.updateServerUrl(settings.serverUrl);
-    this.signaling.updateDeviceName(settings.deviceName);
     this.signaling.setRoomSecrets(settings.pairedDevices.map((d) => d.roomSecret));
   }
 

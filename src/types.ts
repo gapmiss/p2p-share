@@ -12,15 +12,14 @@ export interface PairedDevice {
   displayName: string;
   /** When the pairing was created */
   pairedAt: number;
+  /** Whether to automatically accept transfers from this device */
+  autoAccept: boolean;
 }
 
 export interface P2PShareSettings {
   serverUrl: string;
   saveLocation: string;
   discoveryMode: 'auto' | 'paired-only';
-  deviceName: string;
-  autoAcceptFromPaired: boolean;
-  showNotifications: boolean;
   /** Room secrets for paired devices (enables cross-network discovery) */
   pairedDevices: PairedDevice[];
   /** Log level for console output */
@@ -31,9 +30,6 @@ export const DEFAULT_SETTINGS: P2PShareSettings = {
   serverUrl: 'wss://pairdrop.net',
   saveLocation: 'P2P Share',
   discoveryMode: 'auto',
-  deviceName: '',
-  autoAcceptFromPaired: false,
-  showNotifications: true,
   pairedDevices: [],
   logLevel: 'error',
 };

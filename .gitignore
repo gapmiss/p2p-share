@@ -5,3 +5,4 @@ dist/
 main.js
 data.json
 .claude
+.hotreload

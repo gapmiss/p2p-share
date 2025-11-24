@@ -1,4 +1,4 @@
-import { App, Modal, setIcon } from 'obsidian';
+import { App, Menu, Modal, setIcon } from 'obsidian';
 import type { PeerInfo } from '../types';
 import type { PeerManager } from '../peer-manager';
 
@@ -40,15 +40,30 @@ export class PeerModal extends Modal {
       });
     }
 
-    // Connection status
-    this.statusEl = header.createDiv({ cls: 'p2p-share-connection-status' });
+    // Connection status with menu button
+    const statusContainer = header.createDiv({ cls: 'p2p-share-status-container' });
+    this.statusEl = statusContainer.createDiv({ cls: 'p2p-share-connection-status' });
     this.updateConnectionStatus();
+
+    // Menu button to the right of status
+    const menuBtn = statusContainer.createDiv({
+      cls: 'p2p-share-menu-btn clickable-icon',
+      attr: { 'aria-label': 'Connection options', tabindex: '0' }
+    });
+    setIcon(menuBtn, 'ellipsis');
+    menuBtn.onclick = (e) => this.showConnectionMenu(e);
+    menuBtn.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.showConnectionMenu(e);
+      }
+    };
 
     // Peers container
     this.peersContainer = contentEl.createDiv({ cls: 'p2p-share-peers-container' });
     this.renderPeers();
 
-    // Listen for peer updates
+    // Listen for peer updates (server sends these automatically)
     this.peerManager.on('peers-updated', () => this.renderPeers());
     this.peerManager.on('server-connected', () => {
       this.updateConnectionStatus();
@@ -58,41 +73,29 @@ export class PeerModal extends Modal {
       this.updateConnectionStatus();
       this.renderPeers();
     });
-
-    // Footer with connect/disconnect and refresh buttons
-    const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
-
-    this.connectBtn = footer.createEl('button');
-    this.updateConnectButton();
-    this.connectBtn.onclick = async () => {
-      if (this.connectBtn) {
-        this.connectBtn.disabled = true;
-        this.connectBtn.setText('...');
-      }
-      await this.onToggleConnection();
-      this.updateConnectButton();
-      this.updateConnectionStatus();
-    };
-
-    const refreshBtn = footer.createEl('button', { text: 'Refresh' });
-    refreshBtn.onclick = async () => {
-      refreshBtn.disabled = true;
-      refreshBtn.setText('Refreshing...');
-      try {
-        await this.peerManager.refresh();
-      } finally {
-        refreshBtn.disabled = false;
-        refreshBtn.setText('Refresh');
-      }
-    };
   }
 
-  private updateConnectButton(): void {
-    if (!this.connectBtn) return;
+  private showConnectionMenu(e: MouseEvent | KeyboardEvent): void {
+    const menu = new Menu();
     const isConnected = this.peerManager.isConnected();
-    this.connectBtn.setText(isConnected ? 'Disconnect' : 'Connect');
-    this.connectBtn.disabled = false;
-    this.connectBtn.toggleClass('mod-warning', isConnected);
+
+    menu.addItem((item) =>
+      item
+        .setTitle(isConnected ? 'Disconnect' : 'Connect')
+        .setIcon(isConnected ? 'unlink' : 'link')
+        .onClick(async () => {
+          await this.onToggleConnection();
+          this.updateConnectionStatus();
+        })
+    );
+
+    if (e instanceof MouseEvent) {
+      menu.showAtMouseEvent(e);
+    } else {
+      // For keyboard events, show at the target element
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      menu.showAtPosition({ x: rect.left, y: rect.bottom });
+    }
   }
 
   private updateConnectionStatus(): void {
@@ -127,10 +130,26 @@ export class PeerModal extends Modal {
   private renderPeerItem(peer: PeerInfo): void {
     if (!this.peersContainer) return;
 
-    const item = this.peersContainer.createDiv({ cls: 'p2p-share-peer-item' });
-    item.onclick = () => {
+    const item = this.peersContainer.createDiv({
+      cls: 'p2p-share-peer-item',
+      attr: {
+        tabindex: '0',
+        role: 'button',
+        'aria-label': `Share with ${peer.name.displayName || peer.name.deviceName || 'Unknown'}`
+      }
+    });
+
+    const selectPeer = () => {
       this.onSelect(peer.id);
       this.close();
+    };
+
+    item.onclick = selectPeer;
+    item.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectPeer();
+      }
     };
 
     // Icon

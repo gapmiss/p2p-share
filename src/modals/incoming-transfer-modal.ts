@@ -5,16 +5,20 @@ export class IncomingTransferModal extends Modal {
   private files: FileMetadata[];
   private peerName: string;
   private totalSize: number;
-  private onAccept: () => void;
+  private onAccept: (enableAutoAccept: boolean) => void;
   private onReject: () => void;
+  private roomSecret: string | null;
+  private currentAutoAccept: boolean;
 
   constructor(
     app: App,
     files: FileMetadata[],
     peerName: string,
     totalSize: number,
-    onAccept: () => void,
-    onReject: () => void
+    onAccept: (enableAutoAccept: boolean) => void,
+    onReject: () => void,
+    roomSecret: string | null = null,
+    currentAutoAccept: boolean = false
   ) {
     super(app);
     this.files = files;
@@ -22,6 +26,8 @@ export class IncomingTransferModal extends Modal {
     this.totalSize = totalSize;
     this.onAccept = onAccept;
     this.onReject = onReject;
+    this.roomSecret = roomSecret;
+    this.currentAutoAccept = currentAutoAccept;
   }
 
   onOpen(): void {
@@ -66,6 +72,16 @@ export class IncomingTransferModal extends Modal {
       });
     }
 
+    // Auto-accept checkbox (only show if this is a paired device)
+    let autoAcceptCheckbox: HTMLInputElement | null = null;
+    if (this.roomSecret) {
+      const autoAcceptContainer = contentEl.createDiv({ cls: 'p2p-share-auto-accept-container' });
+      const label = autoAcceptContainer.createEl('label', { cls: 'p2p-share-auto-accept-label' });
+      autoAcceptCheckbox = label.createEl('input', { type: 'checkbox' });
+      autoAcceptCheckbox.checked = this.currentAutoAccept;
+      label.createSpan({ text: ` Always auto-accept from ${this.peerName}` });
+    }
+
     // Action buttons
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer p2p-share-incoming-actions' });
 
@@ -77,7 +93,8 @@ export class IncomingTransferModal extends Modal {
 
     const acceptBtn = footer.createEl('button', { text: 'Accept', cls: 'mod-cta' });
     acceptBtn.onclick = () => {
-      this.onAccept();
+      const enableAutoAccept = autoAcceptCheckbox?.checked ?? false;
+      this.onAccept(enableAutoAccept);
       this.close();
     };
   }
