@@ -1,10 +1,10 @@
 {
-  "id": "peerdrop",
-  "name": "PeerDrop",
+  "id": "p2p-share",
+  "name": "P2P Share",
   "version": "0.1.0",
   "minAppVersion": "1.0.0",
-  "description": "Share files between Obsidian vaults using WebRTC peer-to-peer connections",
-  "author": "PeerDrop Contributors",
-  "authorUrl": "https://github.com/schlagmichdoch/pairdrop",
+  "description": "Share files between vaults using WebRTC peer-to-peer connections",
+  "author": "gapmiss",
+  "authorUrl": "https://github.com/gapmiss/p2p-share",
   "isDesktopOnly": false
 }

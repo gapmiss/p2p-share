@@ -2,16 +2,16 @@ import { Events, TFile, TFolder, Vault } from 'obsidian';
 import { SignalingClient } from './signaling';
 import { RTCPeer } from './rtc-peer';
 import { logger } from './logger';
-import type { PeerInfo, FileMetadata, PeerDropSettings } from './types';
+import type { PeerInfo, FileMetadata, P2PShareSettings } from './types';
 
 export class PeerManager extends Events {
   private signaling: SignalingClient;
   private peers: Map<string, PeerInfo> = new Map();
   private connections: Map<string, RTCPeer> = new Map();
   private vault: Vault;
-  private settings: PeerDropSettings;
+  private settings: P2PShareSettings;
 
-  constructor(vault: Vault, settings: PeerDropSettings) {
+  constructor(vault: Vault, settings: P2PShareSettings) {
     super();
     this.vault = vault;
     this.settings = settings;
@@ -365,7 +365,7 @@ export class PeerManager extends Events {
     return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
   }
 
-  updateSettings(settings: PeerDropSettings): void {
+  updateSettings(settings: P2PShareSettings): void {
     this.settings = settings;
     this.signaling.updateServerUrl(settings.serverUrl);
     this.signaling.updateDeviceName(settings.deviceName);

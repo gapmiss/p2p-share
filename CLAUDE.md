@@ -1,10 +1,10 @@
-# CLAUDE.md - Development Guidelines for PeerDrop
+# CLAUDE.md - Development Guidelines for P2P Share
 
 This file provides context for AI assistants (Claude, etc.) working on this codebase.
 
 ## Project Overview
 
-PeerDrop is an Obsidian plugin that enables peer-to-peer file sharing between vaults using WebRTC. It uses the PairDrop protocol for signaling/peer discovery.
+P2P Share is an Obsidian plugin that enables peer-to-peer file sharing between vaults using WebRTC. It uses the PairDrop protocol for signaling/peer discovery.
 
 ## Architecture
 

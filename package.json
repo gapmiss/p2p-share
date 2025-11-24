@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-peerdrop",
+  "name": "p2p-share",
   "version": "0.1.0",
-  "description": "Share files between Obsidian vaults using WebRTC",
+  "description": "Share files between Obsidian vaults using WebRTC peer-to-peer connections",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
@@ -12,6 +12,7 @@
     "plugin",
     "webrtc",
     "p2p",
+    "peer-to-peer",
     "file-sharing"
   ],
   "license": "MIT",

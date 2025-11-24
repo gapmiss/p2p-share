@@ -1,7 +1,7 @@
-/* PeerDrop Plugin Styles */
+/* P2P Share Plugin Styles */
 
 /* Server Notice */
-.peerdrop-server-notice {
+.p2p-share-server-notice {
   background-color: var(--background-modifier-error);
   border: 1px solid var(--background-modifier-error-hover);
   border-radius: 6px;
@@ -9,38 +9,38 @@
   margin-bottom: 1rem;
 }
 
-.peerdrop-notice-text {
+.p2p-share-notice-text {
   margin: 0 0 0.5rem 0;
   color: var(--text-normal);
 }
 
-.peerdrop-server-notice a {
+.p2p-share-server-notice a {
   color: var(--text-accent);
 }
 
 /* Status Bar */
-.peerdrop-disconnected {
+.p2p-share-disconnected {
   color: var(--text-error);
 }
 
 /* Modal Common Styles */
-.peerdrop-modal {
+.p2p-share-modal {
   padding: 1rem;
 }
 
-.peerdrop-modal-header {
+.p2p-share-modal-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
-.peerdrop-modal-header h2 {
+.p2p-share-modal-header h2 {
   margin: 0;
   font-size: 1.25rem;
 }
 
-.peerdrop-modal-footer {
+.p2p-share-modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -50,7 +50,7 @@
 }
 
 /* Connection Status */
-.peerdrop-connection-status {
+.p2p-share-connection-status {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -59,27 +59,27 @@
   color: var(--text-muted);
 }
 
-.peerdrop-status-dot {
+.p2p-share-status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
 
-.peerdrop-status-dot.connected {
+.p2p-share-status-dot.connected {
   background-color: var(--color-green);
 }
 
-.peerdrop-status-dot.disconnected {
+.p2p-share-status-dot.disconnected {
   background-color: var(--color-red);
 }
 
 /* Peer List */
-.peerdrop-peers-container {
+.p2p-share-peers-container {
   max-height: 400px;
   overflow-y: auto;
 }
 
-.peerdrop-peer-item {
+.p2p-share-peer-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -89,11 +89,11 @@
   transition: background-color 0.15s ease;
 }
 
-.peerdrop-peer-item:hover {
+.p2p-share-peer-item:hover {
   background-color: var(--background-modifier-hover);
 }
 
-.peerdrop-peer-icon {
+.p2p-share-peer-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,25 +103,25 @@
   background-color: var(--background-modifier-border);
 }
 
-.peerdrop-peer-icon svg {
+.p2p-share-peer-icon svg {
   width: 20px;
   height: 20px;
 }
 
-.peerdrop-peer-info {
+.p2p-share-peer-info {
   flex: 1;
 }
 
-.peerdrop-peer-name {
+.p2p-share-peer-name {
   font-weight: 500;
 }
 
-.peerdrop-peer-details {
+.p2p-share-peer-details {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
 
-.peerdrop-rtc-badge {
+.p2p-share-rtc-badge {
   font-size: 0.7rem;
   padding: 2px 6px;
   border-radius: 4px;
@@ -130,26 +130,26 @@
   font-weight: 500;
 }
 
-.peerdrop-empty-state {
+.p2p-share-empty-state {
   text-align: center;
   padding: 2rem;
   color: var(--text-muted);
 }
 
-.peerdrop-empty-state p {
+.p2p-share-empty-state p {
   margin: 0.5rem 0;
 }
 
-.peerdrop-hint {
+.p2p-share-hint {
   font-size: 0.85rem;
 }
 
 /* File Picker */
-.peerdrop-file-picker {
+.p2p-share-file-picker {
   min-width: 500px;
 }
 
-.peerdrop-path-container {
+.p2p-share-path-container {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -160,7 +160,7 @@
   margin-bottom: 1rem;
 }
 
-.peerdrop-breadcrumb-item {
+.p2p-share-breadcrumb-item {
   background: none;
   border: none;
   padding: 0.25rem 0.5rem;
@@ -169,22 +169,22 @@
   color: var(--text-accent);
 }
 
-.peerdrop-breadcrumb-item:hover {
+.p2p-share-breadcrumb-item:hover {
   background-color: var(--background-modifier-hover);
 }
 
-.peerdrop-breadcrumb-sep {
+.p2p-share-breadcrumb-sep {
   color: var(--text-muted);
 }
 
-.peerdrop-file-list {
+.p2p-share-file-list {
   max-height: 350px;
   overflow-y: auto;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
 }
 
-.peerdrop-file-item {
+.p2p-share-file-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -192,121 +192,121 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.peerdrop-file-item:last-child {
+.p2p-share-file-item:last-child {
   border-bottom: none;
 }
 
-.peerdrop-file-item input[type="checkbox"] {
+.p2p-share-file-item input[type="checkbox"] {
   margin: 0;
 }
 
-.peerdrop-file-icon {
+.p2p-share-file-icon {
   display: flex;
   color: var(--text-muted);
 }
 
-.peerdrop-file-icon svg {
+.p2p-share-file-icon svg {
   width: 16px;
   height: 16px;
 }
 
-.peerdrop-file-name {
+.p2p-share-file-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.peerdrop-folder-name {
+.p2p-share-folder-name {
   color: var(--text-accent);
   cursor: pointer;
 }
 
-.peerdrop-folder-name:hover {
+.p2p-share-folder-name:hover {
   text-decoration: underline;
 }
 
-.peerdrop-file-size {
+.p2p-share-file-size {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
 
-.peerdrop-selection-info {
+.p2p-share-selection-info {
   padding: 0.5rem;
   font-size: 0.9rem;
   color: var(--text-muted);
 }
 
-.peerdrop-empty-folder {
+.p2p-share-empty-folder {
   text-align: center;
   padding: 2rem;
   color: var(--text-muted);
 }
 
 /* Transfer Modal */
-.peerdrop-transfer-modal {
+.p2p-share-transfer-modal {
   min-width: 400px;
 }
 
-.peerdrop-transfer-icon svg {
+.p2p-share-transfer-icon svg {
   width: 24px;
   height: 24px;
 }
 
-.peerdrop-transfer-peer {
+.p2p-share-transfer-peer {
   margin-bottom: 0.5rem;
   color: var(--text-muted);
 }
 
-.peerdrop-peer-name-highlight {
+.p2p-share-peer-name-highlight {
   color: var(--text-normal);
   font-weight: 500;
 }
 
-.peerdrop-transfer-summary {
+.p2p-share-transfer-summary {
   margin-bottom: 1rem;
   font-size: 0.9rem;
   color: var(--text-muted);
 }
 
-.peerdrop-progress-overall {
+.p2p-share-progress-overall {
   margin-bottom: 1rem;
 }
 
-.peerdrop-progress-bar {
+.p2p-share-progress-bar {
   height: 8px;
   background-color: var(--background-modifier-border);
   border-radius: 4px;
   overflow: hidden;
 }
 
-.peerdrop-progress-fill {
+.p2p-share-progress-fill {
   height: 100%;
   background-color: var(--interactive-accent);
   border-radius: 4px;
   transition: width 0.2s ease;
 }
 
-.peerdrop-transfer-status {
+.p2p-share-transfer-status {
   text-align: center;
   margin-bottom: 1rem;
   font-weight: 500;
 }
 
-.peerdrop-transfer-status.complete {
+.p2p-share-transfer-status.complete {
   color: var(--color-green);
 }
 
-.peerdrop-transfer-status.error {
+.p2p-share-transfer-status.error {
   color: var(--color-red);
 }
 
-.peerdrop-file-progress-list {
+.p2p-share-file-progress-list {
   max-height: 200px;
   overflow-y: auto;
 }
 
-.peerdrop-file-progress-item {
+.p2p-share-file-progress-item {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -314,17 +314,17 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.peerdrop-file-progress-item:last-child {
+.p2p-share-file-progress-item:last-child {
   border-bottom: none;
 }
 
-.peerdrop-file-progress-info {
+.p2p-share-file-progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.peerdrop-file-progress-name {
+.p2p-share-file-progress-name {
   font-size: 0.9rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -332,41 +332,41 @@
   max-width: 250px;
 }
 
-.peerdrop-file-progress-size {
+.p2p-share-file-progress-size {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.peerdrop-file-progress-status {
+.p2p-share-file-progress-status {
   font-size: 0.8rem;
   color: var(--text-muted);
   text-align: right;
 }
 
-.peerdrop-file-progress-status.complete {
+.p2p-share-file-progress-status.complete {
   color: var(--color-green);
 }
 
 /* Incoming Transfer Modal */
-.peerdrop-incoming-modal {
+.p2p-share-incoming-modal {
   min-width: 350px;
 }
 
-.peerdrop-incoming-icon svg {
+.p2p-share-incoming-icon svg {
   width: 24px;
   height: 24px;
   color: var(--interactive-accent);
 }
 
-.peerdrop-incoming-peer {
+.p2p-share-incoming-peer {
   margin-bottom: 1rem;
 }
 
-.peerdrop-incoming-summary {
+.p2p-share-incoming-summary {
   margin-bottom: 0.5rem;
 }
 
-.peerdrop-incoming-file-list {
+.p2p-share-incoming-file-list {
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid var(--background-modifier-border);
@@ -374,7 +374,7 @@
   margin-bottom: 0.5rem;
 }
 
-.peerdrop-incoming-file-item {
+.p2p-share-incoming-file-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -382,35 +382,35 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.peerdrop-incoming-file-item:last-child {
+.p2p-share-incoming-file-item:last-child {
   border-bottom: none;
 }
 
-.peerdrop-incoming-more {
+.p2p-share-incoming-more {
   padding: 0.5rem;
   text-align: center;
   color: var(--text-muted);
   font-size: 0.85rem;
 }
 
-.peerdrop-incoming-actions {
+.p2p-share-incoming-actions {
   justify-content: space-between;
 }
 
-.peerdrop-btn-reject {
+.p2p-share-btn-reject {
   background-color: var(--background-modifier-error);
   color: var(--text-on-accent);
 }
 
-.peerdrop-btn-reject:hover {
+.p2p-share-btn-reject:hover {
   background-color: var(--background-modifier-error-hover);
 }
 
 /* Settings */
-.peerdrop-status-connected {
+.p2p-share-status-connected {
   color: var(--color-green);
 }
 
-.peerdrop-status-disconnected {
+.p2p-share-status-disconnected {
   color: var(--color-red);
 }

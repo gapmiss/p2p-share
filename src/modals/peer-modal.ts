@@ -25,27 +25,27 @@ export class PeerModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.addClass('peerdrop-modal');
+    contentEl.addClass('p2p-share-modal');
 
     // Header
-    const header = contentEl.createDiv({ cls: 'peerdrop-modal-header' });
+    const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     header.createEl('h2', { text: 'Select Peer' });
 
     // Our display name
     const displayName = this.peerManager.getDisplayName();
     if (displayName) {
       header.createDiv({
-        cls: 'peerdrop-our-name',
+        cls: 'p2p-share-our-name',
         text: `You appear as: ${displayName}`,
       });
     }
 
     // Connection status
-    this.statusEl = header.createDiv({ cls: 'peerdrop-connection-status' });
+    this.statusEl = header.createDiv({ cls: 'p2p-share-connection-status' });
     this.updateConnectionStatus();
 
     // Peers container
-    this.peersContainer = contentEl.createDiv({ cls: 'peerdrop-peers-container' });
+    this.peersContainer = contentEl.createDiv({ cls: 'p2p-share-peers-container' });
     this.renderPeers();
 
     // Listen for peer updates
@@ -60,7 +60,7 @@ export class PeerModal extends Modal {
     });
 
     // Footer with connect/disconnect and refresh buttons
-    const footer = contentEl.createDiv({ cls: 'peerdrop-modal-footer' });
+    const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
 
     this.connectBtn = footer.createEl('button');
     this.updateConnectButton();
@@ -110,11 +110,11 @@ export class PeerModal extends Modal {
     const peers = this.peerManager.getPeers();
 
     if (peers.length === 0) {
-      const emptyState = this.peersContainer.createDiv({ cls: 'peerdrop-empty-state' });
+      const emptyState = this.peersContainer.createDiv({ cls: 'p2p-share-empty-state' });
       emptyState.createEl('p', { text: 'No peers found on your network.' });
       emptyState.createEl('p', {
         text: 'Make sure other devices are connected to the same PairDrop server.',
-        cls: 'peerdrop-hint',
+        cls: 'p2p-share-hint',
       });
       return;
     }
@@ -127,29 +127,29 @@ export class PeerModal extends Modal {
   private renderPeerItem(peer: PeerInfo): void {
     if (!this.peersContainer) return;
 
-    const item = this.peersContainer.createDiv({ cls: 'peerdrop-peer-item' });
+    const item = this.peersContainer.createDiv({ cls: 'p2p-share-peer-item' });
     item.onclick = () => {
       this.onSelect(peer.id);
       this.close();
     };
 
     // Icon
-    const iconContainer = item.createDiv({ cls: 'peerdrop-peer-icon' });
+    const iconContainer = item.createDiv({ cls: 'p2p-share-peer-icon' });
     const iconName = this.getDeviceIcon(peer.name.type);
     setIcon(iconContainer, iconName);
 
     // Info
-    const info = item.createDiv({ cls: 'peerdrop-peer-info' });
-    info.createDiv({ cls: 'peerdrop-peer-name', text: peer.name.displayName || peer.name.deviceName || 'Unknown' });
+    const info = item.createDiv({ cls: 'p2p-share-peer-info' });
+    info.createDiv({ cls: 'p2p-share-peer-name', text: peer.name.displayName || peer.name.deviceName || 'Unknown' });
     const details = [peer.name.os, peer.name.browser].filter(Boolean).join(' • ') || 'Unknown device';
     info.createDiv({
-      cls: 'peerdrop-peer-details',
+      cls: 'p2p-share-peer-details',
       text: details,
     });
 
     // RTC indicator
     if (peer.rtcSupported) {
-      const rtcBadge = item.createDiv({ cls: 'peerdrop-rtc-badge', text: 'P2P' });
+      const rtcBadge = item.createDiv({ cls: 'p2p-share-rtc-badge', text: 'P2P' });
       rtcBadge.title = 'Direct peer-to-peer connection supported';
     }
   }

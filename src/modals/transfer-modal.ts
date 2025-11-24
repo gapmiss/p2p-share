@@ -29,46 +29,46 @@ export class TransferModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.addClass('peerdrop-transfer-modal');
+    contentEl.addClass('p2p-share-transfer-modal');
 
     // Header
-    const header = contentEl.createDiv({ cls: 'peerdrop-modal-header' });
-    const icon = header.createDiv({ cls: 'peerdrop-transfer-icon' });
+    const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
+    const icon = header.createDiv({ cls: 'p2p-share-transfer-icon' });
     setIcon(icon, this.direction === 'send' ? 'upload' : 'download');
     header.createEl('h2', {
       text: this.direction === 'send' ? 'Sending Files' : 'Receiving Files',
     });
 
     // Peer info
-    const peerInfo = contentEl.createDiv({ cls: 'peerdrop-transfer-peer' });
+    const peerInfo = contentEl.createDiv({ cls: 'p2p-share-transfer-peer' });
     peerInfo.createSpan({ text: this.direction === 'send' ? 'To: ' : 'From: ' });
-    peerInfo.createSpan({ text: this.peerName, cls: 'peerdrop-peer-name-highlight' });
+    peerInfo.createSpan({ text: this.peerName, cls: 'p2p-share-peer-name-highlight' });
 
     // File list summary
-    const summary = contentEl.createDiv({ cls: 'peerdrop-transfer-summary' });
+    const summary = contentEl.createDiv({ cls: 'p2p-share-transfer-summary' });
     const totalSize = this.files.reduce((sum, f) => sum + f.size, 0);
     summary.setText(`${this.files.length} file${this.files.length > 1 ? 's' : ''} (${this.formatSize(totalSize)})`);
 
     // Overall progress bar
-    const overallContainer = contentEl.createDiv({ cls: 'peerdrop-progress-overall' });
-    this.overallProgress = overallContainer.createDiv({ cls: 'peerdrop-progress-bar' });
-    const overallFill = this.overallProgress.createDiv({ cls: 'peerdrop-progress-fill' });
+    const overallContainer = contentEl.createDiv({ cls: 'p2p-share-progress-overall' });
+    this.overallProgress = overallContainer.createDiv({ cls: 'p2p-share-progress-bar' });
+    const overallFill = this.overallProgress.createDiv({ cls: 'p2p-share-progress-fill' });
     overallFill.style.width = '0%';
 
     // Status text
     this.statusText = contentEl.createDiv({
-      cls: 'peerdrop-transfer-status',
+      cls: 'p2p-share-transfer-status',
       text: this.direction === 'send' ? 'Connecting...' : 'Waiting for files...'
     });
 
     // Individual file progress
-    this.progressContainer = contentEl.createDiv({ cls: 'peerdrop-file-progress-list' });
+    this.progressContainer = contentEl.createDiv({ cls: 'p2p-share-file-progress-list' });
     for (const file of this.files) {
       this.renderFileProgress(file);
     }
 
     // Cancel button
-    const footer = contentEl.createDiv({ cls: 'peerdrop-modal-footer' });
+    const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
     const cancelBtn = footer.createEl('button', { text: 'Cancel' });
     cancelBtn.onclick = () => {
       if (!this.isComplete) {
@@ -82,19 +82,19 @@ export class TransferModal extends Modal {
     if (!this.progressContainer) return;
 
     const item = this.progressContainer.createDiv({
-      cls: 'peerdrop-file-progress-item',
+      cls: 'p2p-share-file-progress-item',
       attr: { 'data-file': file.name },
     });
 
-    const info = item.createDiv({ cls: 'peerdrop-file-progress-info' });
-    info.createDiv({ cls: 'peerdrop-file-progress-name', text: file.name });
-    info.createDiv({ cls: 'peerdrop-file-progress-size', text: this.formatSize(file.size) });
+    const info = item.createDiv({ cls: 'p2p-share-file-progress-info' });
+    info.createDiv({ cls: 'p2p-share-file-progress-name', text: file.name });
+    info.createDiv({ cls: 'p2p-share-file-progress-size', text: this.formatSize(file.size) });
 
-    const progressBar = item.createDiv({ cls: 'peerdrop-progress-bar' });
-    const fill = progressBar.createDiv({ cls: 'peerdrop-progress-fill' });
+    const progressBar = item.createDiv({ cls: 'p2p-share-progress-bar' });
+    const fill = progressBar.createDiv({ cls: 'p2p-share-progress-fill' });
     fill.style.width = '0%';
 
-    const status = item.createDiv({ cls: 'peerdrop-file-progress-status', text: 'Pending' });
+    const status = item.createDiv({ cls: 'p2p-share-file-progress-status', text: 'Pending' });
   }
 
   updateProgress(progress: TransferProgress): void {

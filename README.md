@@ -1,4 +1,4 @@
-# PeerDrop for Obsidian
+# P2P Share
 
 Share files between Obsidian vaults using WebRTC peer-to-peer connections, powered by [PairDrop](https://github.com/schlagmichdoch/pairdrop).
 
@@ -18,14 +18,14 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 ### Manual Installation
 
 1. Download the latest release (`main.js`, `manifest.json`, `styles.css`)
-2. Create a folder called `peerdrop` in your vault's `.obsidian/plugins/` directory
+2. Create a folder called `p2p-share` in your vault's `.obsidian/plugins/` directory
 3. Copy the downloaded files into the folder
 4. Enable the plugin in Obsidian Settings > Community Plugins
 
 ### From Source
 
 ```bash
-cd obsidian-peerdrop
+cd obsidian-p2p-share
 npm install
 npm run build
 ```
@@ -36,15 +36,15 @@ Then copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugins f
 
 ### Sharing Files
 
-1. Click the PeerDrop icon in the ribbon (left sidebar)
+1. Click the P2P Share icon in the ribbon (left sidebar)
 2. Select a peer from the list of discovered devices
 3. Choose files or folders to share
 4. Monitor transfer progress
 
 ### Alternative Methods
 
-- **Context Menu**: Right-click any file/folder and select "Share via PeerDrop"
-- **Command Palette**: Use `Ctrl/Cmd + P` and search for "PeerDrop"
+- **Context Menu**: Right-click any file/folder and select "Share via P2P Share"
+- **Command Palette**: Use `Ctrl/Cmd + P` and search for "P2P Share"
   - `Show available peers` - Open peer selection
   - `Share current file` - Share the currently open file
   - `Share files...` - Open file picker
@@ -59,18 +59,18 @@ When someone sends you files:
 1. An incoming transfer dialog will appear
 2. Review the files being sent
 3. Click "Accept" to receive or "Decline" to reject
-4. Files are saved to your configured save location (default: `PeerDrop/`)
+4. Files are saved to your configured save location (default: `P2P Share/`)
 
 ### Device Pairing
 
 Pair devices to share files across different networks:
 
-1. Run command `PeerDrop: Pair with device`
+1. Run command `P2P Share: Pair with device`
 2. Choose "Show pairing code" on one device
 3. Enter the 6-digit code on the other device
 4. Devices are now paired and can discover each other from anywhere
 
-Manage paired devices in Settings > PeerDrop > Paired Devices.
+Manage paired devices in Settings > P2P Share > Paired Devices.
 
 ## Settings
 

@@ -1,13 +1,14 @@
 import { App, PluginSettingTab, Setting, setIcon } from 'obsidian';
-import type PeerDropPlugin from './main';
+import type P2PSharePlugin from './main';
 import type { PairedDevice } from './types';
 import type { LogLevel } from './logger';
 import { ConfirmModal } from './modals';
+import { FolderSuggest } from './folder-suggest';
 
-export class PeerDropSettingTab extends PluginSettingTab {
-  plugin: PeerDropPlugin;
+export class P2PShareSettingTab extends PluginSettingTab {
+  plugin: P2PSharePlugin;
 
-  constructor(app: App, plugin: PeerDropPlugin) {
+  constructor(app: App, plugin: P2PSharePlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -16,7 +17,7 @@ export class PeerDropSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'PeerDrop Settings' });
+    containerEl.createEl('h2', { text: 'P2P Share Settings' });
 
     // Server Configuration
     containerEl.createEl('h3', { text: 'Server Configuration' });
@@ -40,15 +41,18 @@ export class PeerDropSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Save location')
       .setDesc('Folder in your vault where received files will be saved')
-      .addText((text) =>
+      .addText((text) => {
         text
-          .setPlaceholder('PeerDrop')
+          .setPlaceholder('P2P Share')
           .setValue(this.plugin.settings.saveLocation)
           .onChange(async (value) => {
             this.plugin.settings.saveLocation = value;
             await this.plugin.saveSettings();
-          })
-      );
+          });
+
+        // Add folder suggest
+        new FolderSuggest(this.app, text.inputEl);
+      });
 
     // Discovery Settings
     containerEl.createEl('h3', { text: 'Discovery Settings' });

@@ -1,13 +1,13 @@
 import { Menu, Notice, Plugin, TFile, TFolder, addIcon } from 'obsidian';
-import { PeerDropSettingTab } from './settings';
+import { P2PShareSettingTab } from './settings';
 import { PeerManager } from './peer-manager';
 import { PeerModal, FilePickerModal, TransferModal, IncomingTransferModal, PairingModal } from './modals';
-import type { PeerDropSettings, FileMetadata, TransferProgress, PairedDevice } from './types';
+import type { P2PShareSettings, FileMetadata, TransferProgress, PairedDevice } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { logger } from './logger';
 
-// Custom PeerDrop icon
-const PEERDROP_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+// Custom P2P Share icon
+const P2P_SHARE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
   <circle cx="30" cy="30" r="12"/>
   <circle cx="70" cy="30" r="12"/>
   <circle cx="30" cy="70" r="12"/>
@@ -20,8 +20,8 @@ const PEERDROP_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 
   <line x1="60" y1="40" x2="40" y2="60"/>
 </svg>`;
 
-export default class PeerDropPlugin extends Plugin {
-  settings: PeerDropSettings = DEFAULT_SETTINGS;
+export default class P2PSharePlugin extends Plugin {
+  settings: P2PShareSettings = DEFAULT_SETTINGS;
   private peerManager: PeerManager | null = null;
   private statusBarItem: HTMLElement | null = null;
   private activeTransferModal: TransferModal | null = null;
@@ -34,20 +34,20 @@ export default class PeerDropPlugin extends Plugin {
     logger.setLevel(this.settings.logLevel);
 
     // Register custom icon
-    addIcon('peerdrop', PEERDROP_ICON);
+    addIcon('p2p-share', P2P_SHARE_ICON);
 
     // Initialize peer manager
     this.peerManager = new PeerManager(this.app.vault, this.settings);
     this.setupPeerManagerHandlers();
 
     // Add ribbon icon
-    this.addRibbonIcon('peerdrop', 'PeerDrop', () => {
+    this.addRibbonIcon('p2p-share', 'P2P Share', () => {
       this.showPeerModal();
     });
 
     // Add status bar item with menu on click
     this.statusBarItem = this.addStatusBarItem();
-    this.statusBarItem.addClass('peerdrop-status-bar');
+    this.statusBarItem.addClass('p2p-share-status-bar');
     this.statusBarItem.onclick = (e) => this.showStatusBarContextMenu(e);
     this.statusBarItem.oncontextmenu = (e) => {
       e.preventDefault();
@@ -57,13 +57,13 @@ export default class PeerDropPlugin extends Plugin {
 
     // Add commands
     this.addCommand({
-      id: 'peerdrop-show-peers',
+      id: 'p2p-share-show-peers',
       name: 'Show available peers',
       callback: () => this.showPeerModal(),
     });
 
     this.addCommand({
-      id: 'peerdrop-share-current-file',
+      id: 'p2p-share-current-file',
       name: 'Share current file',
       checkCallback: (checking: boolean) => {
         const file = this.app.workspace.getActiveFile();
@@ -78,25 +78,25 @@ export default class PeerDropPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'peerdrop-share-files',
+      id: 'p2p-share-files',
       name: 'Share files...',
       callback: () => this.showFilePicker(),
     });
 
     this.addCommand({
-      id: 'peerdrop-reconnect',
+      id: 'p2p-share-reconnect',
       name: 'Reconnect to server',
       callback: () => this.reconnect(),
     });
 
     this.addCommand({
-      id: 'peerdrop-pair-device',
+      id: 'p2p-share-pair-device',
       name: 'Pair with device',
       callback: () => this.showPairingModal(),
     });
 
     this.addCommand({
-      id: 'peerdrop-toggle-connection',
+      id: 'p2p-share-toggle-connection',
       name: 'Toggle connection',
       callback: () => this.toggleConnection(),
     });
@@ -107,15 +107,15 @@ export default class PeerDropPlugin extends Plugin {
         if (file instanceof TFile) {
           menu.addItem((item) => {
             item
-              .setTitle('Share via PeerDrop')
-              .setIcon('peerdrop')
+              .setTitle('Share via P2P Share')
+              .setIcon('p2p-share')
               .onClick(() => this.shareFiles([file]));
           });
         } else if (file instanceof TFolder) {
           menu.addItem((item) => {
             item
-              .setTitle('Share folder via PeerDrop')
-              .setIcon('peerdrop')
+              .setTitle('Share folder via P2P Share')
+              .setIcon('p2p-share')
               .onClick(() => this.shareFolder(file));
           });
         }
@@ -123,7 +123,7 @@ export default class PeerDropPlugin extends Plugin {
     );
 
     // Add settings tab
-    this.addSettingTab(new PeerDropSettingTab(this.app, this));
+    this.addSettingTab(new P2PShareSettingTab(this.app, this));
 
     // Connect to server
     this.connectToServer();
@@ -138,7 +138,7 @@ export default class PeerDropPlugin extends Plugin {
 
     this.peerManager.on('server-connected', () => {
       this.updateStatusBar();
-      // new Notice('PeerDrop: Connected to server');
+      // new Notice('P2P Share: Connected to server');
     });
 
     this.peerManager.on('server-disconnected', () => {
@@ -169,7 +169,7 @@ export default class PeerDropPlugin extends Plugin {
         logger.warn('No active transfer modal to update');
       }
       if (this.settings.showNotifications) {
-        new Notice('PeerDrop: Transfer complete!');
+        new Notice('P2P Share: Transfer complete!');
       }
     });
 
@@ -183,7 +183,7 @@ export default class PeerDropPlugin extends Plugin {
 
     this.peerManager.on('transfer-rejected', () => {
       this.activeTransferModal?.setError('Transfer rejected by peer');
-      new Notice('PeerDrop: Transfer rejected');
+      new Notice('P2P Share: Transfer rejected');
     });
 
     // Device pairing events
@@ -196,7 +196,7 @@ export default class PeerDropPlugin extends Plugin {
       await this.addPairedDevice(data.roomSecret, 'Paired Device');
 
       this.activePairingModal?.setPairingSuccess(data.roomSecret, 'Paired Device');
-      new Notice('PeerDrop: Device paired successfully!');
+      new Notice('P2P Share: Device paired successfully!');
     });
 
     this.peerManager.on('pair-device-join-key-invalid', () => {
@@ -210,7 +210,7 @@ export default class PeerDropPlugin extends Plugin {
     this.peerManager.on('secret-room-deleted', async (roomSecret: string) => {
       // Other device unpaired - remove from our list
       await this.removePairedDevice(roomSecret);
-      new Notice('PeerDrop: A paired device was removed');
+      new Notice('P2P Share: A paired device was removed');
     });
 
     this.peerManager.on('paired-device-identified', async (data: { roomSecret: string; displayName: string }) => {
@@ -223,7 +223,7 @@ export default class PeerDropPlugin extends Plugin {
     // Don't try to connect if no server URL is configured
     if (!this.settings.serverUrl || this.settings.serverUrl.trim() === '') {
       logger.info('No server URL configured');
-      new Notice('PeerDrop: Please configure a server URL in settings');
+      new Notice('P2P Share: Please configure a server URL in settings');
       this.updateStatusBar();
       return;
     }
@@ -232,7 +232,7 @@ export default class PeerDropPlugin extends Plugin {
       await this.peerManager?.connect();
     } catch (error) {
       logger.error('Failed to connect', error);
-      new Notice('PeerDrop: Failed to connect to server. Check the URL and ensure the server accepts external connections.');
+      new Notice('P2P Share: Failed to connect to server. Check the URL and ensure the server accepts external connections.');
       this.updateStatusBar();
     }
   }
@@ -320,7 +320,7 @@ export default class PeerDropPlugin extends Plugin {
     }
 
     if (allFiles.length === 0) {
-      new Notice('PeerDrop: No files to send');
+      new Notice('P2P Share: No files to send');
       return;
     }
 
@@ -339,7 +339,7 @@ export default class PeerDropPlugin extends Plugin {
       peerName,
       () => {
         // Cancel callback - could implement cancellation
-        new Notice('PeerDrop: Transfer cancelled');
+        new Notice('P2P Share: Transfer cancelled');
       }
     );
     this.activeTransferModal.open();
@@ -386,7 +386,7 @@ export default class PeerDropPlugin extends Plugin {
       () => {
         // Reject
         this.peerManager?.rejectTransfer(data.peerId);
-        new Notice('PeerDrop: Transfer declined');
+        new Notice('P2P Share: Transfer declined');
       }
     ).open();
   }
@@ -426,7 +426,7 @@ export default class PeerDropPlugin extends Plugin {
     if (!this.peerManager) return;
 
     if (!this.peerManager.isConnected()) {
-      new Notice('PeerDrop: Not connected to server. Please reconnect first.');
+      new Notice('P2P Share: Not connected to server. Please reconnect first.');
       return;
     }
 
@@ -489,11 +489,11 @@ export default class PeerDropPlugin extends Plugin {
 
     if (this.peerManager.isConnected()) {
       this.peerManager.disconnect();
-      new Notice('PeerDrop: Disconnected');
+      new Notice('P2P Share: Disconnected');
     } else {
       await this.connectToServer();
       if (this.peerManager.isConnected()) {
-        new Notice('PeerDrop: Connected');
+        new Notice('P2P Share: Connected');
       }
     }
     this.updateStatusBar();

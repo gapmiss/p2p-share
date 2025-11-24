@@ -1,6 +1,6 @@
-# PeerDrop Server Deployment Guide
+# P2P Share Server Deployment Guide
 
-This guide covers deploying your own PairDrop signaling server for use with the PeerDrop Obsidian plugin.
+This guide covers deploying your own PairDrop signaling server for use with the P2P Share Obsidian plugin.
 
 ## Why Self-Host?
 

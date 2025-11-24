@@ -16,26 +16,26 @@ export class FilePickerModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.addClass('peerdrop-file-picker');
+    contentEl.addClass('p2p-share-file-picker');
 
     // Header
-    const header = contentEl.createDiv({ cls: 'peerdrop-modal-header' });
+    const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     header.createEl('h2', { text: 'Select Files to Share' });
 
     // Breadcrumb / path
-    const pathContainer = contentEl.createDiv({ cls: 'peerdrop-path-container' });
+    const pathContainer = contentEl.createDiv({ cls: 'p2p-share-path-container' });
     this.renderBreadcrumb(pathContainer);
 
     // Content area
-    this.contentContainer = contentEl.createDiv({ cls: 'peerdrop-file-list' });
+    this.contentContainer = contentEl.createDiv({ cls: 'p2p-share-file-list' });
     this.renderFileList();
 
     // Selection info
-    this.selectionInfo = contentEl.createDiv({ cls: 'peerdrop-selection-info' });
+    this.selectionInfo = contentEl.createDiv({ cls: 'p2p-share-selection-info' });
     this.updateSelectionInfo();
 
     // Footer with actions
-    const footer = contentEl.createDiv({ cls: 'peerdrop-modal-footer' });
+    const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
 
     const selectAllBtn = footer.createEl('button', { text: 'Select All' });
     selectAllBtn.onclick = () => this.selectAll();
@@ -51,7 +51,7 @@ export class FilePickerModal extends Modal {
     container.empty();
 
     const parts = this.currentPath.split('/').filter((p) => p);
-    const homeBtn = container.createEl('button', { text: 'Vault', cls: 'peerdrop-breadcrumb-item' });
+    const homeBtn = container.createEl('button', { text: 'Vault', cls: 'p2p-share-breadcrumb-item' });
     homeBtn.onclick = () => {
       this.currentPath = '/';
       this.renderFileList();
@@ -61,9 +61,9 @@ export class FilePickerModal extends Modal {
     let path = '';
     for (const part of parts) {
       path += `/${part}`;
-      container.createSpan({ text: ' / ', cls: 'peerdrop-breadcrumb-sep' });
+      container.createSpan({ text: ' / ', cls: 'p2p-share-breadcrumb-sep' });
       const partPath = path;
-      const btn = container.createEl('button', { text: part, cls: 'peerdrop-breadcrumb-item' });
+      const btn = container.createEl('button', { text: part, cls: 'p2p-share-breadcrumb-item' });
       btn.onclick = () => {
         this.currentPath = partPath;
         this.renderFileList();
@@ -94,7 +94,7 @@ export class FilePickerModal extends Modal {
     });
 
     if (children.length === 0) {
-      this.contentContainer.createEl('p', { text: 'Empty folder', cls: 'peerdrop-empty-folder' });
+      this.contentContainer.createEl('p', { text: 'Empty folder', cls: 'p2p-share-empty-folder' });
       return;
     }
 
@@ -106,7 +106,7 @@ export class FilePickerModal extends Modal {
   private renderFileItem(file: TAbstractFile): void {
     if (!this.contentContainer) return;
 
-    const item = this.contentContainer.createDiv({ cls: 'peerdrop-file-item' });
+    const item = this.contentContainer.createDiv({ cls: 'p2p-share-file-item' });
 
     // Checkbox
     const checkbox = item.createEl('input', { type: 'checkbox' });
@@ -131,7 +131,7 @@ export class FilePickerModal extends Modal {
     };
 
     // Icon
-    const iconContainer = item.createDiv({ cls: 'peerdrop-file-icon' });
+    const iconContainer = item.createDiv({ cls: 'p2p-share-file-icon' });
     if (file instanceof TFolder) {
       setIcon(iconContainer, 'folder');
     } else {
@@ -139,9 +139,9 @@ export class FilePickerModal extends Modal {
     }
 
     // Name (clickable for folders)
-    const nameEl = item.createDiv({ cls: 'peerdrop-file-name', text: file.name });
+    const nameEl = item.createDiv({ cls: 'p2p-share-file-name', text: file.name });
     if (file instanceof TFolder) {
-      nameEl.addClass('peerdrop-folder-name');
+      nameEl.addClass('p2p-share-folder-name');
       nameEl.onclick = (e) => {
         e.stopPropagation();
         this.currentPath = `/${file.path}`;
@@ -154,7 +154,7 @@ export class FilePickerModal extends Modal {
     // Size (for files)
     if (file instanceof TFile) {
       const size = this.formatSize(file.stat.size);
-      item.createDiv({ cls: 'peerdrop-file-size', text: size });
+      item.createDiv({ cls: 'p2p-share-file-size', text: size });
     }
   }
 
