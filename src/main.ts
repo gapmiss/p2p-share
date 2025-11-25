@@ -190,10 +190,14 @@ export default class P2PSharePlugin extends Plugin {
     });
 
     this.peerManager.on('pair-device-joined', async (data: { roomSecret: string; peerId: string }) => {
-      // Save the pairing - peer info might not be available yet, will update when we see them
-      await this.addPairedDevice(data.roomSecret, 'Paired Device');
+      // Try to get the peer's display name, fall back to 'Paired Device' if not available yet
+      const peerInfo = this.peerManager.getPeerInfo(data.peerId);
+      const displayName = peerInfo?.displayName || 'Paired Device';
 
-      this.activePairingModal?.setPairingSuccess(data.roomSecret, 'Paired Device');
+      // Save the pairing
+      await this.addPairedDevice(data.roomSecret, displayName);
+
+      this.activePairingModal?.setPairingSuccess(data.roomSecret, displayName);
       new Notice(t('notice.device-paired'));
     });
 
@@ -214,6 +218,11 @@ export default class P2PSharePlugin extends Plugin {
     this.peerManager.on('paired-device-identified', async (data: { roomSecret: string; displayName: string }) => {
       // Update the paired device name now that we know it
       await this.updatePairedDeviceName(data.roomSecret, data.displayName);
+
+      // Also update the pairing modal if it's still open showing this device
+      if (this.activePairingModal) {
+        this.activePairingModal.updatePeerDisplayName(data.displayName);
+      }
     });
   }
 

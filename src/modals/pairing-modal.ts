@@ -354,4 +354,12 @@ export class PairingModal extends Modal {
     this.state = 'error';
     this.render();
   }
+
+  updatePeerDisplayName(displayName: string): void {
+    this.peerDisplayName = displayName;
+    // Re-render if we're still showing the success state
+    if (this.state === 'success') {
+      this.render();
+    }
+  }
 }
