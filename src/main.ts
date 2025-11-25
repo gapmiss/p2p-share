@@ -5,6 +5,7 @@ import { PeerModal, FilePickerModal, TransferModal, IncomingTransferModal, Pairi
 import type { P2PShareSettings, FileMetadata, TransferProgress, PairedDevice } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { logger } from './logger';
+import { t, tp } from './i18n';
 
 // Custom P2P Share icon
 const P2P_SHARE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
@@ -41,7 +42,7 @@ export default class P2PSharePlugin extends Plugin {
     this.setupPeerManagerHandlers();
 
     // Add ribbon icon
-    this.addRibbonIcon('p2p-share', 'P2P Share', () => {
+    this.addRibbonIcon('p2p-share', t('ribbon.tooltip'), () => {
       this.showPeerModal();
     });
 
@@ -58,13 +59,13 @@ export default class P2PSharePlugin extends Plugin {
     // Add commands
     this.addCommand({
       id: 'p2p-share-show-peers',
-      name: 'Show available peers',
+      name: t('command.show-peers'),
       callback: () => this.showPeerModal(),
     });
 
     this.addCommand({
       id: 'p2p-share-current-file',
-      name: 'Share current file',
+      name: t('command.share-current-file'),
       checkCallback: (checking: boolean) => {
         const file = this.app.workspace.getActiveFile();
         if (file) {
@@ -79,25 +80,25 @@ export default class P2PSharePlugin extends Plugin {
 
     this.addCommand({
       id: 'p2p-share-files',
-      name: 'Share files...',
+      name: t('command.share-files'),
       callback: () => this.showFilePicker(),
     });
 
     this.addCommand({
       id: 'p2p-share-reconnect',
-      name: 'Reconnect to server',
+      name: t('command.reconnect'),
       callback: () => this.reconnect(),
     });
 
     this.addCommand({
       id: 'p2p-share-pair-device',
-      name: 'Pair with device',
+      name: t('command.pair-device'),
       callback: () => this.showPairingModal(),
     });
 
     this.addCommand({
       id: 'p2p-share-toggle-connection',
-      name: 'Toggle connection',
+      name: t('command.toggle-connection'),
       callback: () => this.toggleConnection(),
     });
 
@@ -107,14 +108,14 @@ export default class P2PSharePlugin extends Plugin {
         if (file instanceof TFile) {
           menu.addItem((item) => {
             item
-              .setTitle('Share via P2P Share')
+              .setTitle(t('context-menu.share-file'))
               .setIcon('p2p-share')
               .onClick(() => this.shareFiles([file]));
           });
         } else if (file instanceof TFolder) {
           menu.addItem((item) => {
             item
-              .setTitle('Share folder via P2P Share')
+              .setTitle(t('context-menu.share-folder'))
               .setIcon('p2p-share')
               .onClick(() => this.shareFolder(file));
           });
@@ -179,8 +180,8 @@ export default class P2PSharePlugin extends Plugin {
     });
 
     this.peerManager.on('transfer-rejected', () => {
-      this.activeTransferModal?.setError('Transfer rejected by peer');
-      new Notice('P2P Share: Transfer rejected');
+      this.activeTransferModal?.setError(t('notice.transfer-rejected').replace('P2P Share: ', ''));
+      new Notice(t('notice.transfer-rejected'));
     });
 
     // Device pairing events
@@ -193,11 +194,11 @@ export default class P2PSharePlugin extends Plugin {
       await this.addPairedDevice(data.roomSecret, 'Paired Device');
 
       this.activePairingModal?.setPairingSuccess(data.roomSecret, 'Paired Device');
-      new Notice('P2P Share: Device paired successfully!');
+      new Notice(t('notice.device-paired'));
     });
 
     this.peerManager.on('pair-device-join-key-invalid', () => {
-      this.activePairingModal?.setPairingError('Invalid or expired pairing code.');
+      this.activePairingModal?.setPairingError(t('pairing-modal.error.invalid-code'));
     });
 
     this.peerManager.on('pair-device-canceled', () => {
@@ -207,7 +208,7 @@ export default class P2PSharePlugin extends Plugin {
     this.peerManager.on('secret-room-deleted', async (roomSecret: string) => {
       // Other device unpaired - remove from our list
       await this.removePairedDevice(roomSecret);
-      new Notice('P2P Share: A paired device was removed');
+      new Notice(t('notice.device-removed'));
     });
 
     this.peerManager.on('paired-device-identified', async (data: { roomSecret: string; displayName: string }) => {
@@ -220,7 +221,7 @@ export default class P2PSharePlugin extends Plugin {
     // Don't try to connect if no server URL is configured
     if (!this.settings.serverUrl || this.settings.serverUrl.trim() === '') {
       logger.info('No server URL configured');
-      new Notice('P2P Share: Please configure a server URL in settings');
+      new Notice(t('notice.configure-server'));
       this.updateStatusBar();
       return;
     }
@@ -229,7 +230,7 @@ export default class P2PSharePlugin extends Plugin {
       await this.peerManager?.connect();
     } catch (error) {
       logger.error('Failed to connect', error);
-      new Notice('P2P Share: Failed to connect to server. Check the URL and ensure the server accepts external connections.');
+      new Notice(t('notice.failed-to-connect'));
       this.updateStatusBar();
     }
   }
@@ -246,10 +247,11 @@ export default class P2PSharePlugin extends Plugin {
     const peerCount = this.peerManager?.getPeers().length ?? 0;
 
     if (isConnected) {
-      this.statusBarItem.setText(`P2P Share: ${peerCount} peer${peerCount !== 1 ? 's' : ''}`);
+      const peerText = t('status-bar.peers', peerCount, peerCount !== 1 ? 's' : '');
+      this.statusBarItem.setText(`${t('plugin.name')}: ${peerText}`);
       this.statusBarItem.removeClass('p2p-share-disconnected');
     } else {
-      this.statusBarItem.setText('P2P Share: Offline');
+      this.statusBarItem.setText(t('status-bar.offline'));
       this.statusBarItem.addClass('p2p-share-disconnected');
     }
   }
@@ -317,7 +319,7 @@ export default class P2PSharePlugin extends Plugin {
     }
 
     if (allFiles.length === 0) {
-      new Notice('P2P Share: No files to send');
+      new Notice(t('notice.no-files'));
       return;
     }
 
@@ -336,7 +338,7 @@ export default class P2PSharePlugin extends Plugin {
       peerName,
       () => {
         // Cancel callback - could implement cancellation
-        new Notice('P2P Share: Transfer cancelled');
+        new Notice(t('notice.transfer-cancelled'));
       }
     );
     this.activeTransferModal.open();
@@ -346,7 +348,7 @@ export default class P2PSharePlugin extends Plugin {
     } catch (error) {
       logger.error('Error sending files', error);
       this.activeTransferModal?.setError((error as Error).message);
-      new Notice(`P2P Share: Error sending files - ${(error as Error).message}`);
+      new Notice(t('notice.error-sending', (error as Error).message));
     }
   }
 
@@ -382,7 +384,7 @@ export default class P2PSharePlugin extends Plugin {
       );
       this.activeTransferModal.open();
 
-      new Notice(`P2P Share: Auto-accepting transfer from ${peerName}`);
+      new Notice(t('notice.auto-accepting', peerName));
       return;
     }
 
@@ -416,7 +418,7 @@ export default class P2PSharePlugin extends Plugin {
       () => {
         // Reject
         this.peerManager?.rejectTransfer(data.peerId);
-        new Notice('P2P Share: Transfer declined');
+        new Notice(t('notice.transfer-declined'));
       },
       pairedDevice?.roomSecret || null,
       pairedDevice?.autoAccept || false
@@ -458,7 +460,7 @@ export default class P2PSharePlugin extends Plugin {
     if (!this.peerManager) return;
 
     if (!this.peerManager.isConnected()) {
-      new Notice('P2P Share: Not connected to server. Please reconnect first.');
+      new Notice(t('notice.not-connected'));
       return;
     }
 
@@ -531,11 +533,11 @@ export default class P2PSharePlugin extends Plugin {
 
     if (this.peerManager.isConnected()) {
       this.peerManager.disconnect();
-      new Notice('P2P Share: Disconnected');
+      new Notice(t('notice.disconnected'));
     } else {
       await this.connectToServer();
       if (this.peerManager.isConnected()) {
-        new Notice('P2P Share: Connected');
+        new Notice(t('notice.connected'));
       }
     }
     this.updateStatusBar();
@@ -547,7 +549,7 @@ export default class P2PSharePlugin extends Plugin {
 
     menu.addItem((item) =>
       item
-        .setTitle(isConnected ? 'Disconnect' : 'Connect')
+        .setTitle(isConnected ? t('common.disconnect') : t('common.connect'))
         .setIcon(isConnected ? 'unlink' : 'link')
         .onClick(() => this.toggleConnection())
     );
@@ -556,14 +558,14 @@ export default class P2PSharePlugin extends Plugin {
 
     menu.addItem((item) =>
       item
-        .setTitle('Show peers')
+        .setTitle(t('status-bar.menu.show-peers'))
         .setIcon('users')
         .onClick(() => this.showPeerModal())
     );
 
     menu.addItem((item) =>
       item
-        .setTitle('Pair with device')
+        .setTitle(t('status-bar.menu.pair-device'))
         .setIcon('link')
         .onClick(() => this.showPairingModal())
     );

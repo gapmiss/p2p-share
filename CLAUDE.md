@@ -34,6 +34,7 @@ P2P Share is an Obsidian plugin that enables peer-to-peer file sharing between v
 | `src/types.ts` | TypeScript interfaces and PairDrop message types |
 | `src/logger.ts` | Configurable logging system |
 | `src/settings.ts` | Plugin settings UI |
+| `src/i18n/` | Internationalization system with English and French translations |
 
 ## PairDrop Protocol
 
@@ -150,6 +151,14 @@ npm run build    # Production build
 - Show user-facing errors with `new Notice('P2P Share: ...')`
 - Use timeouts for async operations that may hang
 
+### Internationalization (i18n)
+- Use `t()` function from `src/i18n` for translating strings
+- Use `tp()` function for pluralized strings (e.g., "1 file" vs "2 files")
+- Translation keys defined in `src/i18n/locales/en.ts` (source of truth)
+- Current supported languages: English (en), French (fr)
+- Language auto-detected from Obsidian's language setting via `moment.locale()`
+- To add a new language: Create `src/i18n/locales/[code].ts` and add to `translations` object in `src/i18n/index.ts`
+
 ## Common Issues
 
 ### "Unknown message type ws-config"
@@ -185,6 +194,8 @@ Filenames with special characters (quotes, brackets) break CSS selectors. Use `C
 - [x] PairDrop protocol compatibility
 - [x] Configurable logging
 - [x] Connection toggle UI
+- [x] Internationalization (English and French)
+- [ ] Additional languages (Spanish, German, Chinese, etc.)
 - [ ] TURN server support for restrictive networks
 - [ ] Transfer queue for multiple files
 - [ ] Resume interrupted transfers

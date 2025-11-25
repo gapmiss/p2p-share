@@ -1,6 +1,7 @@
 import { App, Menu, Modal, setIcon } from 'obsidian';
 import type { PeerInfo } from '../types';
 import type { PeerManager } from '../peer-manager';
+import { t } from '../i18n';
 
 export class PeerModal extends Modal {
   private peerManager: PeerManager;
@@ -29,14 +30,14 @@ export class PeerModal extends Modal {
 
     // Header
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
-    header.createEl('h2', { text: 'Select Peer' });
+    header.createEl('h2', { text: t('peer-modal.title') });
 
     // Our display name
     const displayName = this.peerManager.getDisplayName();
     if (displayName) {
       header.createDiv({
         cls: 'p2p-share-our-name',
-        text: `You appear as: ${displayName}`,
+        text: t('peer-modal.you-appear-as', displayName),
       });
     }
 
@@ -81,7 +82,7 @@ export class PeerModal extends Modal {
 
     menu.addItem((item) =>
       item
-        .setTitle(isConnected ? 'Disconnect' : 'Connect')
+        .setTitle(isConnected ? t('common.disconnect') : t('common.connect'))
         .setIcon(isConnected ? 'unlink' : 'link')
         .onClick(async () => {
           await this.onToggleConnection();
@@ -103,7 +104,7 @@ export class PeerModal extends Modal {
     this.statusEl.empty();
     const isConnected = this.peerManager.isConnected();
     this.statusEl.createSpan({ cls: `p2p-share-status-dot ${isConnected ? 'connected' : 'disconnected'}` });
-    this.statusEl.createSpan({ text: isConnected ? 'Connected' : 'Disconnected' });
+    this.statusEl.createSpan({ text: isConnected ? t('common.connected') : t('common.disconnected') });
   }
 
   private renderPeers(): void {
@@ -114,9 +115,9 @@ export class PeerModal extends Modal {
 
     if (peers.length === 0) {
       const emptyState = this.peersContainer.createDiv({ cls: 'p2p-share-empty-state' });
-      emptyState.createEl('p', { text: 'No peers found on your network.' });
+      emptyState.createEl('p', { text: t('peer-modal.empty.title') });
       emptyState.createEl('p', {
-        text: 'Make sure other devices are connected to the same PairDrop server.',
+        text: t('peer-modal.empty.hint'),
         cls: 'p2p-share-hint',
       });
       return;

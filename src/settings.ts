@@ -4,6 +4,7 @@ import type { PairedDevice } from './types';
 import type { LogLevel } from './logger';
 import { ConfirmModal } from './modals';
 import { FolderSuggest } from './folder-suggest';
+import { t } from './i18n';
 
 export class P2PShareSettingTab extends PluginSettingTab {
   plugin: P2PSharePlugin;
@@ -17,17 +18,17 @@ export class P2PShareSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'P2P Share Settings' });
+    containerEl.createEl('h2', { text: t('settings.title') });
 
     // Server Configuration
-    containerEl.createEl('h3', { text: 'Server Configuration' });
+    containerEl.createEl('h3', { text: t('settings.server.title') });
 
     new Setting(containerEl)
-      .setName('Signaling server URL')
-      .setDesc('WebSocket URL for your self-hosted PairDrop server (e.g., wss://your-server.com or ws://localhost:3000)')
+      .setName(t('settings.server.url.name'))
+      .setDesc(t('settings.server.url.desc'))
       .addText((text) =>
         text
-          .setPlaceholder('wss://your-pairdrop-server.com')
+          .setPlaceholder(t('settings.server.url.placeholder'))
           .setValue(this.plugin.settings.serverUrl)
           .onChange(async (value) => {
             this.plugin.settings.serverUrl = value;
@@ -36,14 +37,14 @@ export class P2PShareSettingTab extends PluginSettingTab {
       );
 
     // File Settings
-    containerEl.createEl('h3', { text: 'File Settings' });
+    containerEl.createEl('h3', { text: t('settings.files.title') });
 
     new Setting(containerEl)
-      .setName('Save location')
-      .setDesc('Folder in your vault where received files will be saved')
+      .setName(t('settings.files.location.name'))
+      .setDesc(t('settings.files.location.desc'))
       .addText((text) => {
         text
-          .setPlaceholder('P2P Share')
+          .setPlaceholder(t('settings.files.location.placeholder'))
           .setValue(this.plugin.settings.saveLocation)
           .onChange(async (value) => {
             this.plugin.settings.saveLocation = value;
@@ -55,15 +56,15 @@ export class P2PShareSettingTab extends PluginSettingTab {
       });
 
     // Discovery Settings
-    containerEl.createEl('h3', { text: 'Discovery Settings' });
+    containerEl.createEl('h3', { text: t('settings.discovery.title') });
 
     new Setting(containerEl)
-      .setName('Discovery mode')
-      .setDesc('How to discover other peers')
+      .setName(t('settings.discovery.mode.name'))
+      .setDesc(t('settings.discovery.mode.desc'))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption('auto', 'Auto-discover on network')
-          .addOption('paired-only', 'Paired devices only')
+          .addOption('auto', t('settings.discovery.mode.auto'))
+          .addOption('paired-only', t('settings.discovery.mode.paired-only'))
           .setValue(this.plugin.settings.discoveryMode)
           .onChange(async (value: 'auto' | 'paired-only') => {
             this.plugin.settings.discoveryMode = value;
@@ -72,18 +73,18 @@ export class P2PShareSettingTab extends PluginSettingTab {
       );
 
     // Behavior Settings
-    containerEl.createEl('h3', { text: 'Behavior' });
+    containerEl.createEl('h3', { text: t('settings.behavior.title') });
 
     new Setting(containerEl)
-      .setName('Log level')
-      .setDesc('Console log verbosity for debugging')
+      .setName(t('settings.behavior.log-level.name'))
+      .setDesc(t('settings.behavior.log-level.desc'))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption('none', 'None')
-          .addOption('error', 'Errors only')
-          .addOption('warn', 'Warnings & errors')
-          .addOption('info', 'Info')
-          .addOption('debug', 'Debug (verbose)')
+          .addOption('none', t('settings.behavior.log-level.none'))
+          .addOption('error', t('settings.behavior.log-level.error'))
+          .addOption('warn', t('settings.behavior.log-level.warn'))
+          .addOption('info', t('settings.behavior.log-level.info'))
+          .addOption('debug', t('settings.behavior.log-level.debug'))
           .setValue(this.plugin.settings.logLevel)
           .onChange(async (value: LogLevel) => {
             this.plugin.settings.logLevel = value;
@@ -92,23 +93,23 @@ export class P2PShareSettingTab extends PluginSettingTab {
       );
 
     // Connection Status
-    containerEl.createEl('h3', { text: 'Connection Status' });
+    containerEl.createEl('h3', { text: t('settings.connection.title') });
 
     const statusContainer = containerEl.createDiv({ cls: 'p2p-share-status' });
     const statusText = statusContainer.createSpan({
-      text: this.plugin.isConnected() ? 'Connected' : 'Disconnected',
+      text: this.plugin.isConnected() ? t('common.connected') : t('common.disconnected'),
       cls: this.plugin.isConnected() ? 'p2p-share-status-connected' : 'p2p-share-status-disconnected'
     });
 
     new Setting(containerEl)
-      .setName('Reconnect')
-      .setDesc('Manually reconnect to the signaling server')
+      .setName(t('settings.connection.reconnect.name'))
+      .setDesc(t('settings.connection.reconnect.desc'))
       .addButton((button) =>
         button
-          .setButtonText('Reconnect')
+          .setButtonText(t('settings.connection.reconnect.button'))
           .onClick(async () => {
             await this.plugin.reconnect();
-            statusText.setText(this.plugin.isConnected() ? 'Connected' : 'Disconnected');
+            statusText.setText(this.plugin.isConnected() ? t('common.connected') : t('common.disconnected'));
             statusText.className = this.plugin.isConnected()
               ? 'p2p-share-status-connected'
               : 'p2p-share-status-disconnected';
@@ -116,14 +117,14 @@ export class P2PShareSettingTab extends PluginSettingTab {
       );
 
     // Paired Devices Section
-    containerEl.createEl('h3', { text: 'Paired Devices' });
+    containerEl.createEl('h3', { text: t('settings.paired-devices.title') });
 
     const pairedDevices = this.plugin.settings.pairedDevices;
 
     if (pairedDevices.length === 0) {
       const emptyState = containerEl.createDiv({ cls: 'p2p-share-paired-empty' });
       emptyState.createEl('p', {
-        text: 'No paired devices. Use "Pair with device" command to pair across networks.',
+        text: t('settings.paired-devices.empty'),
         cls: 'p2p-share-paired-empty-text',
       });
     } else {
@@ -136,23 +137,24 @@ export class P2PShareSettingTab extends PluginSettingTab {
       // Add "Remove all" button if there are multiple devices
       if (pairedDevices.length > 1) {
         new Setting(containerEl)
-          .setName('Remove all paired devices')
-          .setDesc('This will unpair all devices')
+          .setName(t('settings.paired-devices.remove-all.name'))
+          .setDesc(t('settings.paired-devices.remove-all.desc'))
           .addButton((button) =>
             button
-              .setButtonText('Remove All')
+              .setButtonText(t('settings.paired-devices.remove-all.button'))
               .setWarning()
               .onClick(() => {
                 new ConfirmModal(
                   this.app,
-                  'Remove All Paired Devices',
-                  `Are you sure you want to remove all ${pairedDevices.length} paired devices? You will need to pair again with each device.`,
+                  t('settings.paired-devices.remove-all-confirm.title'),
+                  t('settings.paired-devices.remove-all-confirm.message', pairedDevices.length),
                   async () => {
                     for (const device of [...this.plugin.settings.pairedDevices]) {
                       await this.plugin.removePairedDevice(device.roomSecret);
                     }
                     this.display(); // Refresh
-                  }
+                  },
+                  t('confirm-modal.remove')
                 ).open();
               })
           );
@@ -171,15 +173,15 @@ export class P2PShareSettingTab extends PluginSettingTab {
     details.createDiv({ cls: 'p2p-share-paired-name', text: device.displayName });
     details.createDiv({
       cls: 'p2p-share-paired-date',
-      text: `Paired ${this.formatDate(device.pairedAt)}`,
+      text: t('settings.paired-devices.paired-at', this.formatDate(device.pairedAt)),
     });
 
     const controls = item.createDiv({ cls: 'p2p-share-paired-controls' });
 
     // Auto-accept toggle
     new Setting(controls)
-      .setName('Auto-accept')
-      .setDesc('Automatically accept transfers from this device')
+      .setName(t('settings.paired-devices.auto-accept.name'))
+      .setDesc(t('settings.paired-devices.auto-accept.desc'))
       .addToggle((toggle) =>
         toggle
           .setValue(device.autoAccept)
@@ -191,18 +193,19 @@ export class P2PShareSettingTab extends PluginSettingTab {
 
     const removeBtn = item.createEl('button', {
       cls: 'p2p-share-paired-remove',
-      attr: { 'aria-label': 'Remove pairing' },
+      attr: { 'aria-label': t('settings.paired-devices.remove.label') },
     });
     setIcon(removeBtn, 'x');
     removeBtn.onclick = () => {
       new ConfirmModal(
         this.app,
-        'Remove Paired Device',
-        `Are you sure you want to remove "${device.displayName}"? You will need to pair again to share files with this device.`,
+        t('settings.paired-devices.remove-confirm.title'),
+        t('settings.paired-devices.remove-confirm.message', device.displayName),
         async () => {
           await this.plugin.removePairedDevice(device.roomSecret);
           this.display(); // Refresh
-        }
+        },
+        t('confirm-modal.remove')
       ).open();
     };
   }
@@ -214,11 +217,11 @@ export class P2PShareSettingTab extends PluginSettingTab {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return 'today';
+      return t('date.today');
     } else if (diffDays === 1) {
-      return 'yesterday';
+      return t('date.yesterday');
     } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
+      return t('date.days-ago', diffDays);
     } else {
       return date.toLocaleDateString();
     }

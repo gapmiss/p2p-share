@@ -1,4 +1,5 @@
 import { App, Modal } from 'obsidian';
+import { t } from '../i18n';
 
 export class ConfirmModal extends Modal {
   private title: string;
@@ -30,7 +31,7 @@ export class ConfirmModal extends Modal {
 
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
 
-    const cancelBtn = footer.createEl('button', { text: 'Cancel' });
+    const cancelBtn = footer.createEl('button', { text: t('common.cancel') });
     cancelBtn.onclick = () => this.close();
 
     const confirmBtn = footer.createEl('button', { text: this.confirmText, cls: 'mod-warning' });

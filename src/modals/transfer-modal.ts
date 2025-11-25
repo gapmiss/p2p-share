@@ -1,5 +1,6 @@
 import { App, Modal, setIcon } from 'obsidian';
 import type { FileMetadata, TransferProgress } from '../types';
+import { t, tp } from '../i18n';
 
 export class TransferModal extends Modal {
   private direction: 'send' | 'receive';
@@ -36,18 +37,18 @@ export class TransferModal extends Modal {
     const icon = header.createDiv({ cls: 'p2p-share-transfer-icon' });
     setIcon(icon, this.direction === 'send' ? 'upload' : 'download');
     header.createEl('h2', {
-      text: this.direction === 'send' ? 'Sending Files' : 'Receiving Files',
+      text: this.direction === 'send' ? t('transfer-modal.sending') : t('transfer-modal.receiving'),
     });
 
     // Peer info
     const peerInfo = contentEl.createDiv({ cls: 'p2p-share-transfer-peer' });
-    peerInfo.createSpan({ text: this.direction === 'send' ? 'To: ' : 'From: ' });
+    peerInfo.createSpan({ text: this.direction === 'send' ? t('transfer-modal.to') : t('transfer-modal.from') });
     peerInfo.createSpan({ text: this.peerName, cls: 'p2p-share-peer-name-highlight' });
 
     // File list summary
     const summary = contentEl.createDiv({ cls: 'p2p-share-transfer-summary' });
     const totalSize = this.files.reduce((sum, f) => sum + f.size, 0);
-    summary.setText(`${this.files.length} file${this.files.length > 1 ? 's' : ''} (${this.formatSize(totalSize)})`);
+    summary.setText(tp('transfer-modal.files-summary', this.files.length, this.formatSize(totalSize)));
 
     // Overall progress bar
     const overallContainer = contentEl.createDiv({ cls: 'p2p-share-progress-overall' });
@@ -58,7 +59,7 @@ export class TransferModal extends Modal {
     // Status text
     this.statusText = contentEl.createDiv({
       cls: 'p2p-share-transfer-status',
-      text: this.direction === 'send' ? 'Connecting...' : 'Waiting for files...'
+      text: this.direction === 'send' ? t('transfer-modal.status.connecting') : t('transfer-modal.status.waiting')
     });
 
     // Individual file progress
@@ -69,7 +70,7 @@ export class TransferModal extends Modal {
 
     // Cancel button
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
-    const cancelBtn = footer.createEl('button', { text: 'Cancel' });
+    const cancelBtn = footer.createEl('button', { text: t('common.cancel') });
     cancelBtn.onclick = () => {
       if (!this.isComplete) {
         this.onCancel();
@@ -94,7 +95,7 @@ export class TransferModal extends Modal {
     const fill = progressBar.createDiv({ cls: 'p2p-share-progress-fill' });
     fill.style.width = '0%';
 
-    const status = item.createDiv({ cls: 'p2p-share-file-progress-status', text: 'Pending' });
+    const status = item.createDiv({ cls: 'p2p-share-file-progress-status', text: t('transfer-modal.file.pending') });
   }
 
   updateProgress(progress: TransferProgress): void {
@@ -111,7 +112,7 @@ export class TransferModal extends Modal {
       }
       if (status) {
         if (progress.progress >= 1) {
-          status.setText('Complete');
+          status.setText(t('transfer-modal.file.complete'));
           status.addClass('complete');
         } else {
           status.setText(`${Math.round(progress.progress * 100)}%`);
@@ -134,9 +135,8 @@ export class TransferModal extends Modal {
     // Update status text
     if (this.statusText) {
       const completedFiles = Array.from(this.currentFileProgress.values()).filter((p) => p >= 1).length;
-      this.statusText.setText(
-        `${this.direction === 'send' ? 'Sending' : 'Receiving'}: ${completedFiles}/${this.files.length} files`
-      );
+      const statusKey = this.direction === 'send' ? 'transfer-modal.status.sending' : 'transfer-modal.status.receiving';
+      this.statusText.setText(t(statusKey, completedFiles, this.files.length));
     }
   }
 
@@ -144,7 +144,7 @@ export class TransferModal extends Modal {
     this.isComplete = true;
 
     if (this.statusText) {
-      this.statusText.setText('Transfer complete!');
+      this.statusText.setText(t('transfer-modal.status.transfer-complete'));
       this.statusText.addClass('complete');
     }
 
@@ -155,7 +155,7 @@ export class TransferModal extends Modal {
       const status = item.querySelector('.p2p-share-file-progress-status') as HTMLElement;
       if (fill) fill.style.width = '100%';
       if (status) {
-        status.setText('Complete');
+        status.setText(t('transfer-modal.file.complete'));
         status.addClass('complete');
       }
     });
@@ -170,19 +170,19 @@ export class TransferModal extends Modal {
 
     // Update status text to show all files complete
     if (this.statusText) {
-      this.statusText.setText(`Complete: ${this.files.length}/${this.files.length} files`);
+      this.statusText.setText(t('transfer-modal.status.complete', this.files.length, this.files.length));
     }
 
     // Change cancel to close
     const cancelBtn = this.contentEl.querySelector('.p2p-share-modal-footer button');
     if (cancelBtn) {
-      cancelBtn.textContent = 'Close';
+      cancelBtn.textContent = t('common.close');
     }
   }
 
   setError(message: string): void {
     if (this.statusText) {
-      this.statusText.setText(`Error: ${message}`);
+      this.statusText.setText(t('transfer-modal.status.error', message));
       this.statusText.addClass('error');
     }
   }

@@ -1,4 +1,5 @@
 import { App, Modal, setIcon } from 'obsidian';
+import { t } from '../i18n';
 
 type PairingState = 'choose' | 'show-code' | 'enter-code' | 'success' | 'error';
 
@@ -77,17 +78,17 @@ export class PairingModal extends Modal {
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon' });
     setIcon(iconContainer, 'link');
-    header.createEl('h2', { text: 'Pair Devices' });
+    header.createEl('h2', { text: t('pairing-modal.title') });
 
     const description = contentEl.createDiv({ cls: 'p2p-share-pairing-description' });
     description.createEl('p', {
-      text: 'Pair with another device to share files across different networks.',
+      text: t('pairing-modal.description'),
     });
 
     const buttons = contentEl.createDiv({ cls: 'p2p-share-pairing-buttons' });
 
     const initiateBtn = buttons.createEl('button', {
-      text: 'Show pairing code',
+      text: t('pairing-modal.show-code'),
       cls: 'mod-cta',
     });
     initiateBtn.onclick = () => {
@@ -97,7 +98,7 @@ export class PairingModal extends Modal {
     };
 
     const joinBtn = buttons.createEl('button', {
-      text: 'Enter pairing code',
+      text: t('pairing-modal.enter-code'),
     });
     joinBtn.onclick = () => {
       this.state = 'enter-code';
@@ -105,7 +106,7 @@ export class PairingModal extends Modal {
     };
 
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
-    const cancelBtn = footer.createEl('button', { text: 'Cancel' });
+    const cancelBtn = footer.createEl('button', { text: t('common.cancel') });
     cancelBtn.onclick = () => this.close();
   }
 
@@ -115,13 +116,13 @@ export class PairingModal extends Modal {
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon' });
     setIcon(iconContainer, 'link');
-    header.createEl('h2', { text: 'Pairing Code' });
+    header.createEl('h2', { text: t('pairing-modal.code-title') });
 
     if (this.pairKey) {
       const codeContainer = contentEl.createDiv({ cls: 'p2p-share-pairing-code-container' });
       const codeEl = codeContainer.createDiv({
         cls: 'p2p-share-pairing-code',
-        attr: { tabindex: '0', role: 'button', 'aria-label': 'Click to copy pairing code' }
+        attr: { tabindex: '0', role: 'button', 'aria-label': t('pairing-modal.code-click-to-copy') }
       });
       codeEl.setText(this.formatPairKey(this.pairKey));
 
@@ -136,7 +137,7 @@ export class PairingModal extends Modal {
 
       const instruction = contentEl.createDiv({ cls: 'p2p-share-pairing-instruction' });
       instruction.createEl('p', {
-        text: 'Enter this code on the other device to pair.',
+        text: t('pairing-modal.code-instruction'),
       });
 
       this.countdownEl = instruction.createEl('p', {
@@ -145,11 +146,11 @@ export class PairingModal extends Modal {
       this.startCountdown();
     } else {
       const loading = contentEl.createDiv({ cls: 'p2p-share-pairing-loading' });
-      loading.createEl('p', { text: 'Generating pairing code...' });
+      loading.createEl('p', { text: t('pairing-modal.code-generating') });
     }
 
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
-    const cancelBtn = footer.createEl('button', { text: 'Cancel' });
+    const cancelBtn = footer.createEl('button', { text: t('common.cancel') });
     cancelBtn.onclick = () => {
       this.onCancel();
       this.close();
@@ -162,11 +163,11 @@ export class PairingModal extends Modal {
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon' });
     setIcon(iconContainer, 'link');
-    header.createEl('h2', { text: 'Enter Pairing Code' });
+    header.createEl('h2', { text: t('pairing-modal.enter-code') });
 
     const instruction = contentEl.createDiv({ cls: 'p2p-share-pairing-instruction' });
     instruction.createEl('p', {
-      text: 'Enter the 6-digit code shown on the other device.',
+      text: t('pairing-modal.enter-instruction'),
     });
 
     const inputContainer = contentEl.createDiv({ cls: 'p2p-share-pairing-input-container' });
@@ -200,13 +201,13 @@ export class PairingModal extends Modal {
 
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
 
-    const backBtn = footer.createEl('button', { text: 'Back' });
+    const backBtn = footer.createEl('button', { text: t('common.back') });
     backBtn.onclick = () => {
       this.state = 'choose';
       this.render();
     };
 
-    const joinBtn = footer.createEl('button', { text: 'Join', cls: 'mod-cta' });
+    const joinBtn = footer.createEl('button', { text: t('pairing-modal.join'), cls: 'mod-cta' });
     joinBtn.onclick = () => {
       if (this.inputEl && this.inputEl.value.length === 6) {
         this.submitPairKey(this.inputEl.value);
@@ -227,18 +228,18 @@ export class PairingModal extends Modal {
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon p2p-share-success' });
     setIcon(iconContainer, 'check');
-    header.createEl('h2', { text: 'Paired Successfully!' });
+    header.createEl('h2', { text: t('pairing-modal.success.title') });
 
     const message = contentEl.createDiv({ cls: 'p2p-share-pairing-success-message' });
     message.createEl('p', {
-      text: `You are now paired with "${this.peerDisplayName}".`,
+      text: t('pairing-modal.success.message', this.peerDisplayName),
     });
     message.createEl('p', {
-      text: 'You can now share files with this device from anywhere.',
+      text: t('pairing-modal.success.hint'),
     });
 
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
-    const doneBtn = footer.createEl('button', { text: 'Done', cls: 'mod-cta' });
+    const doneBtn = footer.createEl('button', { text: t('common.done'), cls: 'mod-cta' });
     doneBtn.onclick = () => this.close();
   }
 
@@ -248,23 +249,23 @@ export class PairingModal extends Modal {
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     const iconContainer = header.createDiv({ cls: 'p2p-share-pairing-icon p2p-share-error' });
     setIcon(iconContainer, 'x');
-    header.createEl('h2', { text: 'Pairing Failed' });
+    header.createEl('h2', { text: t('pairing-modal.error.title') });
 
     const message = contentEl.createDiv({ cls: 'p2p-share-pairing-error-message' });
     message.createEl('p', {
-      text: this.errorMessage || 'An unknown error occurred.',
+      text: this.errorMessage || t('pairing-modal.error.unknown'),
     });
 
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
 
-    const retryBtn = footer.createEl('button', { text: 'Try Again' });
+    const retryBtn = footer.createEl('button', { text: t('pairing-modal.try-again') });
     retryBtn.onclick = () => {
       this.state = 'choose';
       this.errorMessage = null;
       this.render();
     };
 
-    const closeBtn = footer.createEl('button', { text: 'Close' });
+    const closeBtn = footer.createEl('button', { text: t('common.close') });
     closeBtn.onclick = () => this.close();
   }
 
@@ -282,7 +283,7 @@ export class PairingModal extends Modal {
       const codeEl = this.contentEl.querySelector('.p2p-share-pairing-code') as HTMLElement;
       if (codeEl) {
         const originalText = codeEl.textContent;
-        codeEl.textContent = '✓ Copied!';
+        codeEl.textContent = t('pairing-modal.code-copied');
         setTimeout(() => {
           codeEl.textContent = originalText;
         }, 1000);
@@ -303,7 +304,7 @@ export class PairingModal extends Modal {
 
       if (this.timeRemaining <= 0) {
         this.stopCountdown();
-        this.setPairingError('Pairing code expired. Please try again.');
+        this.setPairingError(t('pairing-modal.error.expired'));
       }
     }, 1000);
   }
@@ -317,7 +318,8 @@ export class PairingModal extends Modal {
 
   private updateCountdownDisplay(): void {
     if (this.countdownEl) {
-      this.countdownEl.textContent = `The code expires in ${this.timeRemaining} second${this.timeRemaining !== 1 ? 's' : ''}.`;
+      const plural = this.timeRemaining !== 1 ? 's' : '';
+      this.countdownEl.textContent = t('pairing-modal.code-expires', this.timeRemaining, plural);
     }
   }
 
@@ -348,7 +350,7 @@ export class PairingModal extends Modal {
   }
 
   setPairingCanceled(): void {
-    this.errorMessage = 'Pairing was canceled.';
+    this.errorMessage = t('pairing-modal.error.canceled');
     this.state = 'error';
     this.render();
   }

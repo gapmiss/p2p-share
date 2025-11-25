@@ -1,5 +1,6 @@
 import { App, Modal, setIcon } from 'obsidian';
 import type { FileMetadata } from '../types';
+import { t, tp } from '../i18n';
 
 export class IncomingTransferModal extends Modal {
   private files: FileMetadata[];
@@ -39,17 +40,17 @@ export class IncomingTransferModal extends Modal {
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     const iconContainer = header.createDiv({ cls: 'p2p-share-incoming-icon' });
     setIcon(iconContainer, 'download');
-    header.createEl('h2', { text: 'Incoming Transfer' });
+    header.createEl('h2', { text: t('incoming-modal.title') });
 
     // From peer
     const peerInfo = contentEl.createDiv({ cls: 'p2p-share-incoming-peer' });
-    peerInfo.createSpan({ text: 'From: ' });
+    peerInfo.createSpan({ text: t('incoming-modal.from') });
     peerInfo.createSpan({ text: this.peerName, cls: 'p2p-share-peer-name-highlight' });
 
     // File summary
     const summary = contentEl.createDiv({ cls: 'p2p-share-incoming-summary' });
     summary.createEl('p', {
-      text: `${this.files.length} file${this.files.length > 1 ? 's' : ''} (${this.formatSize(this.totalSize)})`,
+      text: tp('incoming-modal.files-summary', this.files.length, this.formatSize(this.totalSize)),
     });
 
     // File list
@@ -68,7 +69,7 @@ export class IncomingTransferModal extends Modal {
     if (this.files.length > maxDisplay) {
       fileList.createDiv({
         cls: 'p2p-share-incoming-more',
-        text: `...and ${this.files.length - maxDisplay} more`,
+        text: t('incoming-modal.more-files', this.files.length - maxDisplay),
       });
     }
 
@@ -79,19 +80,19 @@ export class IncomingTransferModal extends Modal {
       const label = autoAcceptContainer.createEl('label', { cls: 'p2p-share-auto-accept-label' });
       autoAcceptCheckbox = label.createEl('input', { type: 'checkbox' });
       autoAcceptCheckbox.checked = this.currentAutoAccept;
-      label.createSpan({ text: ` Always auto-accept from ${this.peerName}` });
+      label.createSpan({ text: t('incoming-modal.auto-accept', this.peerName) });
     }
 
     // Action buttons
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer p2p-share-incoming-actions' });
 
-    const rejectBtn = footer.createEl('button', { text: 'Decline', cls: 'p2p-share-btn-reject' });
+    const rejectBtn = footer.createEl('button', { text: t('incoming-modal.decline'), cls: 'p2p-share-btn-reject' });
     rejectBtn.onclick = () => {
       this.onReject();
       this.close();
     };
 
-    const acceptBtn = footer.createEl('button', { text: 'Accept', cls: 'mod-cta' });
+    const acceptBtn = footer.createEl('button', { text: t('incoming-modal.accept'), cls: 'mod-cta' });
     acceptBtn.onclick = () => {
       const enableAutoAccept = autoAcceptCheckbox?.checked ?? false;
       this.onAccept(enableAutoAccept);

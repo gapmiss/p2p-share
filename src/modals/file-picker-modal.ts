@@ -1,4 +1,5 @@
 import { App, Modal, TFile, TFolder, TAbstractFile, setIcon } from 'obsidian';
+import { t, tp } from '../i18n';
 
 export class FilePickerModal extends Modal {
   private selectedFiles: Set<TFile> = new Set();
@@ -20,7 +21,7 @@ export class FilePickerModal extends Modal {
 
     // Header
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
-    header.createEl('h2', { text: 'Select Files to Share' });
+    header.createEl('h2', { text: t('file-picker.title') });
 
     // Breadcrumb / path
     const pathContainer = contentEl.createDiv({ cls: 'p2p-share-path-container' });
@@ -37,13 +38,13 @@ export class FilePickerModal extends Modal {
     // Footer with actions
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
 
-    const selectAllBtn = footer.createEl('button', { text: 'Select All' });
+    const selectAllBtn = footer.createEl('button', { text: t('file-picker.select-all') });
     selectAllBtn.onclick = () => this.selectAll();
 
-    const clearBtn = footer.createEl('button', { text: 'Clear Selection' });
+    const clearBtn = footer.createEl('button', { text: t('file-picker.clear-selection') });
     clearBtn.onclick = () => this.clearSelection();
 
-    const confirmBtn = footer.createEl('button', { text: 'Share Selected', cls: 'mod-cta' });
+    const confirmBtn = footer.createEl('button', { text: t('file-picker.share-selected'), cls: 'mod-cta' });
     confirmBtn.onclick = () => this.confirm();
   }
 
@@ -51,7 +52,7 @@ export class FilePickerModal extends Modal {
     container.empty();
 
     const parts = this.currentPath.split('/').filter((p) => p);
-    const homeBtn = container.createEl('button', { text: 'Vault', cls: 'p2p-share-breadcrumb-item' });
+    const homeBtn = container.createEl('button', { text: t('file-picker.vault'), cls: 'p2p-share-breadcrumb-item' });
     homeBtn.onclick = () => {
       this.currentPath = '/';
       this.renderFileList();
@@ -94,7 +95,7 @@ export class FilePickerModal extends Modal {
     });
 
     if (children.length === 0) {
-      this.contentContainer.createEl('p', { text: 'Empty folder', cls: 'p2p-share-empty-folder' });
+      this.contentContainer.createEl('p', { text: t('file-picker.empty-folder'), cls: 'p2p-share-empty-folder' });
       return;
     }
 
@@ -195,13 +196,13 @@ export class FilePickerModal extends Modal {
     const folderCount = this.selectedFolders.size;
 
     if (fileCount === 0 && folderCount === 0) {
-      this.selectionInfo.setText('No items selected');
+      this.selectionInfo.setText(t('file-picker.no-items-selected'));
       return;
     }
 
     const parts: string[] = [];
-    if (fileCount > 0) parts.push(`${fileCount} file${fileCount > 1 ? 's' : ''}`);
-    if (folderCount > 0) parts.push(`${folderCount} folder${folderCount > 1 ? 's' : ''}`);
+    if (fileCount > 0) parts.push(tp('file-picker.files', fileCount));
+    if (folderCount > 0) parts.push(tp('file-picker.folders', folderCount));
 
     // Calculate total size including files in selected folders
     let totalSize = Array.from(this.selectedFiles).reduce((sum, f) => sum + f.stat.size, 0);
@@ -209,7 +210,7 @@ export class FilePickerModal extends Modal {
       totalSize += this.getFolderSize(folder);
     }
 
-    this.selectionInfo.setText(`${parts.join(', ')} selected (${this.formatSize(totalSize)})`);
+    this.selectionInfo.setText(t('file-picker.selected', parts.join(', '), this.formatSize(totalSize)));
   }
 
   private getFolderSize(folder: TFolder): number {
