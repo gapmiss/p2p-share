@@ -126,6 +126,26 @@ export class IncomingTransferModal extends Modal {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
 
+  updatePeerName(newName: string): void {
+    this.peerName = newName;
+
+    // Update peer name display
+    const peerEl = this.contentEl.querySelector('.p2p-share-peer-name-highlight');
+    if (peerEl) {
+      peerEl.textContent = newName;
+    }
+
+    // Update auto-accept checkbox label if it exists
+    const autoAcceptLabel = this.contentEl.querySelector('.p2p-share-auto-accept-label');
+    if (autoAcceptLabel) {
+      // Find the text span and update it
+      const textSpan = autoAcceptLabel.querySelector('span');
+      if (textSpan) {
+        textSpan.textContent = t('incoming-modal.auto-accept', newName);
+      }
+    }
+  }
+
   onClose(): void {
     const { contentEl } = this;
     contentEl.empty();

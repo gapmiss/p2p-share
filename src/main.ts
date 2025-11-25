@@ -224,6 +224,17 @@ export default class P2PSharePlugin extends Plugin {
         this.activePairingModal.updatePeerDisplayName(data.displayName);
       }
     });
+
+    this.peerManager.on('peer-name-changed', async (data: { peerId: string; displayName: string }) => {
+      logger.debug('Peer name changed', data);
+
+      // Update paired device name if applicable
+      await this.updatePairedDeviceNameIfMatched(data.peerId, data.displayName);
+
+      // Update active modals if they exist
+      this.activeTransferModal?.updatePeerName?.(data.displayName);
+      this.activePairingModal?.updatePeerDisplayName?.(data.displayName);
+    });
   }
 
   private async connectToServer(): Promise<void> {
@@ -539,6 +550,24 @@ export default class P2PSharePlugin extends Plugin {
       await this.saveSettings();
       logger.debug('Updated paired device auto-accept to', autoAccept);
     }
+  }
+
+  private async updatePairedDeviceNameIfMatched(peerId: string, newDisplayName: string): Promise<void> {
+    // Use PeerManager to look up roomSecret for this peerId
+    const roomSecret = this.peerManager?.getRoomSecretForPeer(peerId);
+    if (!roomSecret) return; // Not a paired device
+
+    // Find paired device by roomSecret
+    const pairedDevice = this.settings.pairedDevices.find((d) => d.roomSecret === roomSecret);
+    if (pairedDevice) {
+      await this.updatePairedDeviceName(roomSecret, newDisplayName);
+    }
+  }
+
+  broadcastDisplayNameChange(newDisplayName: string): void {
+    if (!this.peerManager) return;
+    this.peerManager.broadcastDisplayNameToAllPeers(newDisplayName);
+    new Notice(t('notice.display-name-changed', newDisplayName));
   }
 
   isConnected(): boolean {

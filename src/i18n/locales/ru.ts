@@ -48,6 +48,7 @@ export const ru = {
 	'notice.not-connected': 'P2P Share: Не подключено к серверу. Пожалуйста, сначала подключитесь.',
 	'notice.transfer-declined': 'P2P Share: Передача отклонена',
 	'notice.auto-accepting': 'P2P Share: Автоматическое принятие передачи от {0}',
+	'notice.display-name-changed': 'P2P Share: Отображаемое имя изменено на {0}',
 
 	// Peer Modal
 	'peer-modal.title': 'Выберите устройство',
@@ -150,6 +151,9 @@ export const ru = {
 	'settings.behavior.log-level.debug': 'Отладка (подробно)',
 
 	'settings.connection.title': 'Статус подключения',
+	'settings.connection.display-name.name': 'Отображаемое имя',
+	'settings.connection.display-name.desc': 'Как вы отображаетесь для других устройств',
+	'settings.connection.display-name.placeholder': 'Введите имя',
 	'settings.connection.reconnect.name': 'Переподключение',
 	'settings.connection.reconnect.desc': 'Вручную переподключиться к серверу сигнализации',
 	'settings.connection.reconnect.button': 'Переподключиться',

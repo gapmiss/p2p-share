@@ -24,6 +24,8 @@ export interface P2PShareSettings {
   pairedDevices: PairedDevice[];
   /** Log level for console output */
   logLevel: LogLevel;
+  /** Custom display name shown to other peers */
+  customDisplayName?: string;
 }
 
 export const DEFAULT_SETTINGS: P2PShareSettings = {
@@ -176,6 +178,14 @@ export interface PairDropTextMessage {
 }
 
 /**
+ * Display name change notification sent to peers.
+ */
+export interface PairDropDisplayNameChanged {
+  type: 'display-name-changed';
+  displayName: string;
+}
+
+/**
  * Union type of all PairDrop data channel messages.
  */
 export type PairDropMessage =
@@ -186,4 +196,5 @@ export type PairDropMessage =
   | PairDropTransferResponse
   | PairDropProgress
   | PairDropFileTransferComplete
-  | PairDropTextMessage;
+  | PairDropTextMessage
+  | PairDropDisplayNameChanged;

@@ -48,6 +48,7 @@ export const fr = {
 	'notice.not-connected': 'P2P Share : Non connecté au serveur. Veuillez d\'abord vous reconnecter.',
 	'notice.transfer-declined': 'P2P Share : Transfert refusé',
 	'notice.auto-accepting': 'P2P Share : Acceptation automatique du transfert de {0}',
+	'notice.display-name-changed': 'P2P Share : Nom d\'affichage changé en {0}',
 
 	// Peer Modal
 	'peer-modal.title': 'Sélectionner un pair',
@@ -150,6 +151,9 @@ export const fr = {
 	'settings.behavior.log-level.debug': 'Débogage (verbeux)',
 
 	'settings.connection.title': 'État de la connexion',
+	'settings.connection.display-name.name': 'Nom d\'affichage',
+	'settings.connection.display-name.desc': 'Comment vous apparaissez aux autres pairs',
+	'settings.connection.display-name.placeholder': 'Entrez un nom personnalisé',
 	'settings.connection.reconnect.name': 'Reconnecter',
 	'settings.connection.reconnect.desc': 'Reconnecter manuellement au serveur de signalisation',
 	'settings.connection.reconnect.button': 'Reconnecter',

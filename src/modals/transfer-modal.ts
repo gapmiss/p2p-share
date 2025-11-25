@@ -187,6 +187,14 @@ export class TransferModal extends Modal {
     }
   }
 
+  updatePeerName(newName: string): void {
+    this.peerName = newName;
+    const peerEl = this.contentEl.querySelector('.p2p-share-peer-name-highlight');
+    if (peerEl) {
+      peerEl.textContent = newName;
+    }
+  }
+
   private formatSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

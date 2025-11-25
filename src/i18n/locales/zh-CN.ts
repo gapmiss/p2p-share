@@ -48,6 +48,7 @@ export const zhCN = {
 	'notice.not-connected': 'P2P Share: 未连接到服务器。请先重新连接。',
 	'notice.transfer-declined': 'P2P Share: 传输被拒绝',
 	'notice.auto-accepting': 'P2P Share: 自动接受来自 {0} 的传输',
+	'notice.display-name-changed': 'P2P Share: 显示名称已更改为 {0}',
 
 	// Peer Modal
 	'peer-modal.title': '选择设备',
@@ -150,6 +151,9 @@ export const zhCN = {
 	'settings.behavior.log-level.debug': '调试 (详细)',
 
 	'settings.connection.title': '连接状态',
+	'settings.connection.display-name.name': '显示名称',
+	'settings.connection.display-name.desc': '您在其他设备中显示的名称',
+	'settings.connection.display-name.placeholder': '输入自定义名称',
 	'settings.connection.reconnect.name': '重新连接',
 	'settings.connection.reconnect.desc': '手动重新连接到信令服务器',
 	'settings.connection.reconnect.button': '重新连接',

@@ -10,6 +10,7 @@ export class PeerManager extends Events {
   private connections: Map<string, RTCPeer> = new Map();
   private vault: Vault;
   private settings: P2PShareSettings;
+  private peerRoomSecrets: Map<string, string> = new Map(); // Track peerId -> roomSecret mapping
 
   constructor(vault: Vault, settings: P2PShareSettings) {
     super();
@@ -55,6 +56,11 @@ export class PeerManager extends Events {
       // Add peers to our map (don't clear - we may be in multiple rooms)
       for (const peer of data.peers) {
         this.peers.set(peer.id, peer);
+
+        // Track roomSecret for paired devices
+        if (data.roomType === 'secret' && data.roomId) {
+          this.peerRoomSecrets.set(peer.id, data.roomId);
+        }
       }
       this.trigger('peers-updated', Array.from(this.peers.values()));
 
@@ -71,6 +77,12 @@ export class PeerManager extends Events {
 
     this.signaling.on('peer-joined', (data: { peer: PeerInfo; roomType: string; roomId: string }) => {
       this.peers.set(data.peer.id, data.peer);
+
+      // Track roomSecret for paired devices
+      if (data.roomType === 'secret' && data.roomId) {
+        this.peerRoomSecrets.set(data.peer.id, data.roomId);
+      }
+
       this.trigger('peer-joined', data.peer);
       this.trigger('peers-updated', Array.from(this.peers.values()));
 
@@ -86,6 +98,7 @@ export class PeerManager extends Events {
 
     this.signaling.on('peer-left', (peerId: string) => {
       this.peers.delete(peerId);
+      this.peerRoomSecrets.delete(peerId); // Clean up roomSecret tracking
       const connection = this.connections.get(peerId);
       if (connection) {
         connection.close();
@@ -173,6 +186,10 @@ export class PeerManager extends Events {
     peer.on('transfer-rejected', () => {
       this.trigger('transfer-rejected', peer.getPeerId());
     });
+
+    peer.on('display-name-changed', (newDisplayName: string) => {
+      this.handlePeerNameChanged(peer.getPeerId(), newDisplayName);
+    });
   }
 
   async connect(): Promise<void> {
@@ -191,7 +208,8 @@ export class PeerManager extends Events {
   }
 
   getDisplayName(): string | null {
-    return this.signaling.getDisplayName();
+    // Prefer custom display name if set, otherwise fall back to server-assigned name
+    return this.settings.customDisplayName || this.signaling.getDisplayName();
   }
 
   disconnect(): void {
@@ -404,5 +422,33 @@ export class PeerManager extends Events {
 
   deleteRoomSecret(roomSecret: string): void {
     this.signaling.deleteRoomSecret(roomSecret);
+  }
+
+  // ============================================================================
+  // DISPLAY NAME MANAGEMENT
+  // ============================================================================
+
+  private handlePeerNameChanged(peerId: string, newDisplayName: string): void {
+    const peer = this.peers.get(peerId);
+    if (peer) {
+      peer.name.displayName = newDisplayName;
+      this.peers.set(peerId, peer);
+
+      // Emit event for UI updates
+      this.trigger('peer-name-changed', { peerId, displayName: newDisplayName });
+      this.trigger('peers-updated', Array.from(this.peers.values()));
+    }
+  }
+
+  getRoomSecretForPeer(peerId: string): string | null {
+    return this.peerRoomSecrets.get(peerId) || null;
+  }
+
+  broadcastDisplayNameToAllPeers(displayName: string): void {
+    for (const connection of this.connections.values()) {
+      if (connection.isReady()) {
+        connection.sendDisplayNameChange(displayName);
+      }
+    }
   }
 }

@@ -539,6 +539,10 @@ export class RTCPeer extends Events {
         this.trigger('transfer-rejected');
         break;
 
+      case 'display-name-changed':
+        this.handleDisplayNameChanged(message.displayName as string);
+        break;
+
       default:
         logger.warn('Unknown message type', message.type);
     }
@@ -642,6 +646,42 @@ export class RTCPeer extends Events {
       this.lastProgress = overallProgress;
       this.sendProgress(overallProgress);
     }
+  }
+
+  private handleDisplayNameChanged(newDisplayName: string): void {
+    // Sanitize and validate
+    const trimmed = newDisplayName?.trim() || '';
+
+    // Reject empty/invalid names
+    if (!trimmed || trimmed.length === 0) {
+      logger.warn('Rejected empty display name change');
+      return;
+    }
+
+    // Length limits
+    const maxLength = 50;
+    const sanitized = trimmed.length > maxLength ? trimmed.substring(0, maxLength) : trimmed;
+
+    // Basic XSS prevention (strip HTML tags)
+    const cleaned = sanitized.replace(/<[^>]*>/g, '');
+
+    logger.debug('Peer changed display name to', cleaned);
+    this.trigger('display-name-changed', cleaned);
+  }
+
+  sendDisplayNameChange(displayName: string): void {
+    if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
+      logger.warn('Cannot send display name change, channel not open');
+      return;
+    }
+
+    const message = {
+      type: 'display-name-changed',
+      displayName,
+    };
+
+    logger.debug('Sending display name change to peer', this.peerId, displayName);
+    this.dataChannel.send(JSON.stringify(message));
   }
 
   // ============================================================================
