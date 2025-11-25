@@ -520,17 +520,31 @@
 }
 
 .p2p-share-pairing-input-container {
+  display: flex;
+  justify-content: center;
   margin: 1.5rem 0;
 }
 
 .p2p-share-pairing-input {
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 1.5rem;
-  text-align: center;
+  font-size: 2rem !important;
+  font-weight: 600;
   font-family: var(--font-monospace);
-  letter-spacing: 0.5em;
-  border-radius: 6px;
+  letter-spacing: 0.3em;
+  padding: 1rem 1.5rem !important;
+  min-height: 70px !important;
+  border-radius: 8px;
+  background-color: var(--background-secondary);
+  border: 2px solid var(--background-modifier-border);
+  text-align: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  width: 12ch;
+  max-width: 100%;
+}
+
+.p2p-share-pairing-input:focus {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  outline: none;
 }
 
 .p2p-share-pairing-success-message,
