@@ -29,17 +29,23 @@ export default class P2PSharePlugin extends Plugin {
   private activePairingModal: PairingModal | null = null;
 
   async onload(): Promise<void> {
-    await this.loadSettings();
+    try {
+      await this.loadSettings();
 
-    // Initialize logger level from settings
-    logger.setLevel(this.settings.logLevel);
+      // Initialize logger level from settings
+      logger.setLevel(this.settings.logLevel);
 
-    // Register custom icon
-    addIcon('p2p-share', P2P_SHARE_ICON);
+      // Register custom icon
+      addIcon('p2p-share', P2P_SHARE_ICON);
 
-    // Initialize peer manager
-    this.peerManager = new PeerManager(this.app.vault, this.settings);
-    this.setupPeerManagerHandlers();
+      // Initialize peer manager
+      this.peerManager = new PeerManager(this.app.vault, this.settings);
+      this.setupPeerManagerHandlers();
+    } catch (error) {
+      console.error('[P2P Share] Fatal error during plugin load:', error);
+      new Notice('P2P Share: Failed to load plugin - ' + (error as Error).message);
+      throw error;
+    }
 
     // Add ribbon icon
     this.addRibbonIcon('p2p-share', t('ribbon.tooltip'), () => {
@@ -126,8 +132,10 @@ export default class P2PSharePlugin extends Plugin {
     // Add settings tab
     this.addSettingTab(new P2PShareSettingTab(this.app, this));
 
-    // Connect to server
-    this.connectToServer();
+    // Connect to server if auto-connect is enabled
+    if (this.settings.autoConnect) {
+      this.connectToServer();
+    }
   }
 
   async onunload(): Promise<void> {
@@ -351,8 +359,24 @@ export default class P2PSharePlugin extends Plugin {
       return;
     }
 
-    // Create file metadata for the modal
-    const fileMetadata: FileMetadata[] = allFiles.map((f) => ({
+    // Filter out empty files (0 bytes) before UI and transfer
+    const nonEmptyFiles = allFiles.filter((f) => f.stat.size > 0);
+    const skippedCount = allFiles.length - nonEmptyFiles.length;
+
+    // Notify if files were skipped
+    if (skippedCount > 0) {
+      const fileWord = skippedCount === 1 ? 'file' : 'files';
+      new Notice(`P2P Share: Skipped ${skippedCount} empty ${fileWord} (0 bytes)`);
+    }
+
+    // Check if we have any files left to send
+    if (nonEmptyFiles.length === 0) {
+      new Notice(t('notice.no-files'));
+      return;
+    }
+
+    // Create file metadata for the modal (only non-empty files)
+    const fileMetadata: FileMetadata[] = nonEmptyFiles.map((f) => ({
       name: f.name,
       size: f.stat.size,
       type: this.getMimeType(f.extension),
@@ -372,7 +396,7 @@ export default class P2PSharePlugin extends Plugin {
     this.activeTransferModal.open();
 
     try {
-      await this.peerManager.sendFilesToPeer(peerId, allFiles);
+      await this.peerManager.sendFilesToPeer(peerId, nonEmptyFiles);
     } catch (error) {
       logger.error('Error sending files', error);
       this.activeTransferModal?.setError((error as Error).message);
@@ -562,12 +586,6 @@ export default class P2PSharePlugin extends Plugin {
     if (pairedDevice) {
       await this.updatePairedDeviceName(roomSecret, newDisplayName);
     }
-  }
-
-  broadcastDisplayNameChange(newDisplayName: string): void {
-    if (!this.peerManager) return;
-    this.peerManager.broadcastDisplayNameToAllPeers(newDisplayName);
-    new Notice(t('notice.display-name-changed', newDisplayName));
   }
 
   isConnected(): boolean {

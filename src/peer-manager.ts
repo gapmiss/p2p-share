@@ -208,8 +208,7 @@ export class PeerManager extends Events {
   }
 
   getDisplayName(): string | null {
-    // Prefer custom display name if set, otherwise fall back to server-assigned name
-    return this.settings.customDisplayName || this.signaling.getDisplayName();
+    return this.signaling.getDisplayName();
   }
 
   disconnect(): void {
@@ -265,7 +264,9 @@ export class PeerManager extends Events {
     // Note: PairDrop web doesn't support folder structure, so we flatten files.
     // The 'path' field is kept for potential plugin-to-plugin transfers but
     // PairDrop web will ignore it and use only the filename.
+    // Empty files should already be filtered out in main.ts before reaching here.
     const fileData: { metadata: FileMetadata; data: ArrayBuffer }[] = [];
+
     for (const file of files) {
       const data = await this.vault.readBinary(file);
 

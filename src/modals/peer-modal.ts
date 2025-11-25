@@ -68,7 +68,9 @@ export class PeerModal extends Modal {
     this.renderPeers();
 
     // Listen for peer updates (server sends these automatically)
-    this.peerManager.on('peers-updated', () => this.renderPeers());
+    this.peerManager.on('peers-updated', () => {
+      this.renderPeers();
+    });
     this.peerManager.on('server-connected', () => {
       this.updateConnectionStatus();
       this.renderPeers();
@@ -114,7 +116,19 @@ export class PeerModal extends Modal {
     if (!this.peersContainer) return;
     this.peersContainer.empty();
 
+    const isConnected = this.peerManager.isConnected();
     const peers = this.peerManager.getPeers();
+
+    // Don't show peers if not connected
+    if (!isConnected) {
+      const emptyState = this.peersContainer.createDiv({ cls: 'p2p-share-empty-state' });
+      emptyState.createEl('p', { text: t('peer-modal.disconnected.title') });
+      emptyState.createEl('p', {
+        text: t('peer-modal.disconnected.hint'),
+        cls: 'p2p-share-hint',
+      });
+      return;
+    }
 
     if (peers.length === 0) {
       const emptyState = this.peersContainer.createDiv({ cls: 'p2p-share-empty-state' });

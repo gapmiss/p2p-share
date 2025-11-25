@@ -48,11 +48,12 @@ export const en = {
 	'notice.not-connected': 'P2P Share: Not connected to server. Please reconnect first.',
 	'notice.transfer-declined': 'P2P Share: Transfer declined',
 	'notice.auto-accepting': 'P2P Share: Auto-accepting transfer from {0}',
-	'notice.display-name-changed': 'P2P Share: Display name changed to {0}',
 
 	// Peer Modal
 	'peer-modal.title': 'Select Peer',
 	'peer-modal.you-appear-as': 'You appear as: {0}',
+	'peer-modal.disconnected.title': 'Disconnected',
+	'peer-modal.disconnected.hint': 'Connect to discover peers on your network.',
 	'peer-modal.empty.title': 'No peers found on your network.',
 	'peer-modal.empty.hint': 'Make sure other devices are connected to the same PairDrop server.',
 	'peer-modal.p2p-badge': 'P2P',
@@ -149,11 +150,10 @@ export const en = {
 	'settings.behavior.log-level.warn': 'Warnings & errors',
 	'settings.behavior.log-level.info': 'Info',
 	'settings.behavior.log-level.debug': 'Debug (verbose)',
+	'settings.behavior.auto-connect.name': 'Auto-connect on startup',
+	'settings.behavior.auto-connect.desc': 'Automatically connect to server when Obsidian starts',
 
 	'settings.connection.title': 'Connection Status',
-	'settings.connection.display-name.name': 'Display name',
-	'settings.connection.display-name.desc': 'How you appear to other peers',
-	'settings.connection.display-name.placeholder': 'Enter custom name',
 	'settings.connection.reconnect.name': 'Reconnect',
 	'settings.connection.reconnect.desc': 'Manually reconnect to the signaling server',
 	'settings.connection.reconnect.button': 'Reconnect',

@@ -48,11 +48,12 @@ export const zhCN = {
 	'notice.not-connected': 'P2P Share: 未连接到服务器。请先重新连接。',
 	'notice.transfer-declined': 'P2P Share: 传输被拒绝',
 	'notice.auto-accepting': 'P2P Share: 自动接受来自 {0} 的传输',
-	'notice.display-name-changed': 'P2P Share: 显示名称已更改为 {0}',
 
 	// Peer Modal
 	'peer-modal.title': '选择设备',
 	'peer-modal.you-appear-as': '您显示为: {0}',
+	'peer-modal.disconnected.title': '已断开连接',
+	'peer-modal.disconnected.hint': '连接以发现网络中的设备。',
 	'peer-modal.empty.title': '在您的网络中未发现设备。',
 	'peer-modal.empty.hint': '请确保其他设备已连接到相同的 PairDrop 服务器。',
 	'peer-modal.p2p-badge': 'P2P',
@@ -149,11 +150,10 @@ export const zhCN = {
 	'settings.behavior.log-level.warn': '警告和错误',
 	'settings.behavior.log-level.info': '信息',
 	'settings.behavior.log-level.debug': '调试 (详细)',
+	'settings.behavior.auto-connect.name': '启动时自动连接',
+	'settings.behavior.auto-connect.desc': 'Obsidian 启动时自动连接到服务器',
 
 	'settings.connection.title': '连接状态',
-	'settings.connection.display-name.name': '显示名称',
-	'settings.connection.display-name.desc': '您在其他设备中显示的名称',
-	'settings.connection.display-name.placeholder': '输入自定义名称',
 	'settings.connection.reconnect.name': '重新连接',
 	'settings.connection.reconnect.desc': '手动重新连接到信令服务器',
 	'settings.connection.reconnect.button': '重新连接',

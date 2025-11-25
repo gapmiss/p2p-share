@@ -8,7 +8,6 @@ import { t } from './i18n';
 
 export class P2PShareSettingTab extends PluginSettingTab {
   plugin: P2PSharePlugin;
-  private displayNameTimeout: number | null = null;
 
   constructor(app: App, plugin: P2PSharePlugin) {
     super(app, plugin);
@@ -97,6 +96,18 @@ export class P2PShareSettingTab extends PluginSettingTab {
           })
       );
 
+    new Setting(containerEl)
+      .setName(t('settings.behavior.auto-connect.name'))
+      .setDesc(t('settings.behavior.auto-connect.desc'))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.autoConnect)
+          .onChange(async (value) => {
+            this.plugin.settings.autoConnect = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // Connection Status
     containerEl.createEl('h3', { text: t('settings.connection.title') });
 
@@ -105,45 +116,6 @@ export class P2PShareSettingTab extends PluginSettingTab {
       text: this.plugin.isConnected() ? t('common.connected') : t('common.disconnected'),
       cls: this.plugin.isConnected() ? 'p2p-share-status-connected' : 'p2p-share-status-disconnected'
     });
-
-    new Setting(containerEl)
-      .setName(t('settings.connection.display-name.name'))
-      .setDesc(t('settings.connection.display-name.desc'))
-      .addText((text) =>
-        text
-          .setPlaceholder(t('settings.connection.display-name.placeholder'))
-          .setValue(this.plugin.settings.customDisplayName || '')
-          .onChange((value) => {
-            // Clear existing timeout
-            if (this.displayNameTimeout !== null) {
-              window.clearTimeout(this.displayNameTimeout);
-            }
-
-            // Set new timeout - wait 1 second after user stops typing
-            this.displayNameTimeout = window.setTimeout(async () => {
-              const trimmed = value.trim();
-
-              // If empty, clear custom name to fall back to server-assigned name
-              if (!trimmed && this.plugin.settings.customDisplayName) {
-                this.plugin.settings.customDisplayName = undefined;
-                await this.plugin.saveSettings();
-                // Broadcast server-assigned name to peers
-                const serverName = this.plugin.peerManager?.getDisplayName();
-                if (serverName) {
-                  this.plugin.broadcastDisplayNameChange(serverName);
-                }
-              }
-              // If non-empty and different, update custom name
-              else if (trimmed && trimmed !== this.plugin.settings.customDisplayName) {
-                this.plugin.settings.customDisplayName = trimmed;
-                await this.plugin.saveSettings();
-                // Broadcast name change to all connected peers
-                this.plugin.broadcastDisplayNameChange(trimmed);
-              }
-              this.displayNameTimeout = null;
-            }, 1000);
-          })
-      );
 
     new Setting(containerEl)
       .setName(t('settings.connection.reconnect.name'))

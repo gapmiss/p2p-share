@@ -131,26 +131,23 @@ export class SignalingClient extends Events {
   disconnect(): void {
     this.manualDisconnect = true;
     if (this.ws) {
-      const currentWs = this.ws;
-      this.ws = null;
-
       // Tell the server we're disconnecting gracefully
-      if (currentWs.readyState === WebSocket.OPEN) {
+      if (this.ws.readyState === WebSocket.OPEN) {
         try {
-          currentWs.send(JSON.stringify({ type: 'disconnect' }));
+          this.ws.send(JSON.stringify({ type: 'disconnect' }));
         } catch (error) {
           logger.warn('Failed to send disconnect message', error);
         }
       }
 
-      // Remove event handlers to prevent stale events
-      currentWs.onopen = null;
-      currentWs.onmessage = null;
-      currentWs.onerror = null;
-      currentWs.onclose = null;
+      // Close the connection - this will trigger onclose handler
+      this.ws.close();
 
-      // Close the connection
-      currentWs.close();
+      // Immediately set ws to null so isConnected() returns false
+      this.ws = null;
+
+      // Manually trigger disconnect event since we won't get onclose
+      this.trigger('disconnected');
     }
   }
 

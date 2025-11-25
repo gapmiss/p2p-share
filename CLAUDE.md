@@ -181,6 +181,15 @@ Race condition - transfer may complete before modal is created. Fixed by impleme
 ### querySelector fails on filenames
 Filenames with special characters (quotes, brackets) break CSS selectors. Use `CSS.escape()`.
 
+### Peer list shows stale peers after disconnect
+The `disconnect()` method was removing the `onclose` handler before the WebSocket closed, preventing the `disconnected` event from firing. Fixed by manually triggering the event after setting `ws = null`.
+
+### Custom display names cause complexity
+Custom display names required proactive WebRTC connections and added timing issues. Removed in favor of server-assigned names for simplicity and stability.
+
+### Empty files (0 bytes) handling
+Empty files cause issues with PairDrop protocol and WebRTC data channels. Solution: Filter out empty files before transfer in `main.ts` `sendToPeer()` method. Users are notified when empty files are skipped. This prevents stalls and ensures compatibility with PairDrop web/mobile apps.
+
 ## Testing
 
 1. Run two Obsidian vaults on the same machine
@@ -192,6 +201,25 @@ Filenames with special characters (quotes, brackets) break CSS selectors. Use `C
 7. Test with PairDrop web/mobile apps
 8. Test device pairing across different networks
 9. Test connect/disconnect toggle from status bar menu
+10. Test transfers with mix of empty and non-empty files (empty files should be filtered)
+
+## Settings
+
+### Behavior Settings
+- **Log level**: Configure console logging verbosity (none, error, warn, info, debug)
+- **Auto-connect on startup**: Toggle automatic connection to server when Obsidian loads (default: enabled)
+
+### Discovery Settings
+- **Discovery mode**: Choose between auto-discover (local network + paired devices) or paired devices only
+
+### Connection Settings
+- Manual connect/disconnect via status bar menu or settings
+- Reconnect button in settings for manual reconnection
+
+### Paired Devices
+- Persistent device pairing across different networks
+- Auto-accept transfers option per paired device
+- Device management (view, unpair) in settings
 
 ## Future Improvements
 
@@ -200,6 +228,7 @@ Filenames with special characters (quotes, brackets) break CSS selectors. Use `C
 - [x] Configurable logging
 - [x] Connection toggle UI
 - [x] Internationalization (English, French, Russian, Simplified Chinese)
+- [x] Auto-connect setting for manual connection control
 - [ ] Additional languages (Spanish, German, Japanese, etc.)
 - [ ] TURN server support for restrictive networks
 - [ ] Transfer queue for multiple files
