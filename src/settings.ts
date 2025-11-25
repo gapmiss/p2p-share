@@ -42,8 +42,8 @@ export class P2PShareSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName(t('settings.files.location.name'))
       .setDesc(t('settings.files.location.desc'))
-      .addText((text) => {
-        text
+      .addSearch((search) => {
+        search
           .setPlaceholder(t('settings.files.location.placeholder'))
           .setValue(this.plugin.settings.saveLocation)
           .onChange(async (value) => {
@@ -52,7 +52,7 @@ export class P2PShareSettingTab extends PluginSettingTab {
           });
 
         // Add folder suggest
-        new FolderSuggest(this.app, text.inputEl);
+        new FolderSuggest(this.app, search.inputEl);
       });
 
     // Discovery Settings
