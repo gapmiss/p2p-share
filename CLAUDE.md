@@ -155,8 +155,13 @@ npm run build    # Production build
 - Use `t()` function from `src/i18n` for translating strings
 - Use `tp()` function for pluralized strings (e.g., "1 file" vs "2 files")
 - Translation keys defined in `src/i18n/locales/en.ts` (source of truth)
-- Current supported languages: English (en), French (fr)
+- Current supported languages: English (en), French (fr), Russian (ru), Simplified Chinese (zh-CN)
 - Language auto-detected from Obsidian's language setting via `moment.locale()`
+- Pluralization rules vary by language (simplified implementation):
+  - English: 1 vs 2+ (suffix 's')
+  - French: 0-1 vs 2+ (suffix 's')
+  - Russian: 1 vs 2+ (suffix 'а', simplified from full 3-form rules)
+  - Chinese: No plural suffixes
 - To add a new language: Create `src/i18n/locales/[code].ts` and add to `translations` object in `src/i18n/index.ts`
 
 ## Common Issues
@@ -194,8 +199,8 @@ Filenames with special characters (quotes, brackets) break CSS selectors. Use `C
 - [x] PairDrop protocol compatibility
 - [x] Configurable logging
 - [x] Connection toggle UI
-- [x] Internationalization (English and French)
-- [ ] Additional languages (Spanish, German, Chinese, etc.)
+- [x] Internationalization (English, French, Russian, Simplified Chinese)
+- [ ] Additional languages (Spanish, German, Japanese, etc.)
 - [ ] TURN server support for restrictive networks
 - [ ] Transfer queue for multiple files
 - [ ] Resume interrupted transfers

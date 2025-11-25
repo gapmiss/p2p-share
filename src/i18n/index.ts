@@ -1,12 +1,16 @@
 import { moment } from 'obsidian';
 import { en } from './locales/en';
 import { fr } from './locales/fr';
+import { ru } from './locales/ru';
+import { zhCN } from './locales/zh-CN';
 
 export type TranslationKey = keyof typeof en;
 
 const translations = {
 	en,
 	fr,
+	ru,
+	'zh-CN': zhCN,
 } as const;
 
 type SupportedLocale = keyof typeof translations;
@@ -16,9 +20,11 @@ type SupportedLocale = keyof typeof translations;
  */
 function getCurrentLocale(): SupportedLocale {
 	const locale = moment.locale();
-	// moment.locale() returns the current locale (e.g., 'en', 'fr', 'es')
+	// moment.locale() returns the current locale (e.g., 'en', 'fr', 'ru', 'zh')
 	// If locale is not supported, fall back to 'en'
 	if (locale.startsWith('fr')) return 'fr';
+	if (locale.startsWith('ru')) return 'ru';
+	if (locale.startsWith('zh')) return 'zh-CN';
 	return 'en';
 }
 
@@ -56,6 +62,13 @@ export function tp(key: TranslationKey, count: number, ...args: (string | number
 		pluralSuffix = count !== 1 ? 's' : '';
 	} else if (locale === 'fr') {
 		pluralSuffix = count > 1 ? 's' : '';
+	} else if (locale === 'ru') {
+		// Simplified Russian pluralization: 1 vs 2+
+		// Full rules would be: 1, 2-4, 5+ but using simplified version
+		pluralSuffix = count !== 1 ? 'а' : '';
+	} else if (locale === 'zh-CN') {
+		// Chinese doesn't use plural suffixes
+		pluralSuffix = '';
 	}
 
 	// Build the replacement array with count as first argument and plural suffix as second
