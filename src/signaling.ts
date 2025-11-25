@@ -21,6 +21,7 @@ export class SignalingClient extends Events {
   private currentRoomType: string | null = null;
   private currentRoomId: string | null = null;
   private roomSecrets: string[] = [];
+  private discoveryMode: 'auto' | 'paired-only' = 'auto';
 
   constructor(serverUrl: string) {
     super();
@@ -33,6 +34,15 @@ export class SignalingClient extends Events {
    */
   setRoomSecrets(secrets: string[]): void {
     this.roomSecrets = secrets;
+  }
+
+  /**
+   * Set discovery mode to control which rooms to join.
+   * 'auto': Join both IP room and paired device rooms
+   * 'paired-only': Join only paired device rooms (no local network discovery)
+   */
+  setDiscoveryMode(mode: 'auto' | 'paired-only'): void {
+    this.discoveryMode = mode;
   }
 
   connect(): Promise<void> {
@@ -121,11 +131,45 @@ export class SignalingClient extends Events {
   disconnect(): void {
     this.manualDisconnect = true;
     if (this.ws) {
-      // Tell the server we're disconnecting gracefully
-      this.send({ type: 'disconnect' });
-      this.ws.close();
+      const currentWs = this.ws;
       this.ws = null;
+
+      // Tell the server we're disconnecting gracefully
+      if (currentWs.readyState === WebSocket.OPEN) {
+        try {
+          currentWs.send(JSON.stringify({ type: 'disconnect' }));
+        } catch (error) {
+          logger.warn('Failed to send disconnect message', error);
+        }
+      }
+
+      // Remove event handlers to prevent stale events
+      currentWs.onopen = null;
+      currentWs.onmessage = null;
+      currentWs.onerror = null;
+      currentWs.onclose = null;
+
+      // Close the connection
+      currentWs.close();
     }
+  }
+
+  /**
+   * Reconnect to the server (used for manual reconnection).
+   * This properly disconnects and resets state before reconnecting.
+   */
+  async reconnect(): Promise<void> {
+    // Disconnect cleanly
+    this.disconnect();
+
+    // Reset reconnect counter since this is a manual reconnect
+    this.reconnectAttempt = 0;
+
+    // Small delay to ensure the old connection is fully closed
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Connect again
+    await this.connect();
   }
 
   isConnected(): boolean {
@@ -273,14 +317,24 @@ export class SignalingClient extends Events {
   }
 
   private joinIpRoom(): void {
-    // Join the IP-based room so peers on the same network can discover us
-    logger.debug('Joining IP room');
-    this.send({ type: 'join-ip-room' });
+    // Join rooms based on discovery mode
+    if (this.discoveryMode === 'auto') {
+      // Join both IP room and paired device rooms
+      logger.debug('Joining IP room (auto mode)');
+      this.send({ type: 'join-ip-room' });
 
-    // Also send room secrets to join paired device rooms
-    if (this.roomSecrets.length > 0) {
-      logger.debug('Sending room secrets for', this.roomSecrets.length, 'paired devices');
-      this.send({ type: 'room-secrets', roomSecrets: this.roomSecrets });
+      if (this.roomSecrets.length > 0) {
+        logger.debug('Sending room secrets for', this.roomSecrets.length, 'paired devices');
+        this.send({ type: 'room-secrets', roomSecrets: this.roomSecrets });
+      }
+    } else if (this.discoveryMode === 'paired-only') {
+      // Skip IP room, only join paired device rooms
+      if (this.roomSecrets.length > 0) {
+        logger.debug('Joining only paired device rooms (paired-only mode)');
+        this.send({ type: 'room-secrets', roomSecrets: this.roomSecrets });
+      } else {
+        logger.warn('paired-only mode but no paired devices - not joining any rooms');
+      }
     }
   }
 
@@ -358,5 +412,44 @@ export class SignalingClient extends Events {
 
   updateServerUrl(url: string): void {
     this.serverUrl = url;
+  }
+
+  /**
+   * Switch discovery mode and rejoin appropriate rooms.
+   * Requires an active connection.
+   */
+  switchDiscoveryMode(mode: 'auto' | 'paired-only'): void {
+    if (!this.isConnected()) {
+      logger.warn('Cannot switch discovery mode while disconnected');
+      return;
+    }
+
+    const oldMode = this.discoveryMode;
+    this.discoveryMode = mode;
+
+    if (oldMode === mode) {
+      return; // No change
+    }
+
+    logger.info('Switching discovery mode from', oldMode, 'to', mode);
+
+    // Emit event to clear current peers before rejoining rooms
+    this.trigger('discovery-mode-switching');
+
+    // Rejoin appropriate rooms based on new mode
+    if (mode === 'auto') {
+      // Switch to auto: join both IP room and paired device rooms
+      this.joinIpRoom();
+    } else if (mode === 'paired-only') {
+      // Switch to paired-only: only join paired device rooms
+      if (this.roomSecrets.length > 0) {
+        logger.debug('Rejoining paired device rooms only');
+        this.send({ type: 'room-secrets', roomSecrets: this.roomSecrets });
+      } else {
+        logger.warn('paired-only mode but no paired devices');
+        // Emit empty peers list since we're not in any rooms
+        this.trigger('peers', { peers: [], roomType: null, roomId: null });
+      }
+    }
   }
 }

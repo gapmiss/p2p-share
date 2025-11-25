@@ -245,8 +245,13 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   async reconnect(): Promise<void> {
-    this.peerManager?.disconnect();
-    await this.connectToServer();
+    if (!this.peerManager) return;
+    try {
+      await this.peerManager.reconnect();
+    } catch (error) {
+      logger.error('Failed to reconnect', error);
+      new Notice(t('notice.failed-to-connect'));
+    }
   }
 
   private updateStatusBar(): void {
@@ -274,7 +279,8 @@ export default class P2PSharePlugin extends Plugin {
       (peerId) => {
         this.showFilePicker(peerId);
       },
-      () => this.toggleConnection()
+      () => this.toggleConnection(),
+      this.settings.pairedDevices
     ).open();
   }
 
@@ -297,7 +303,8 @@ export default class P2PSharePlugin extends Plugin {
       (peerId) => {
         this.sendToPeer(peerId, files, folders);
       },
-      () => this.toggleConnection()
+      () => this.toggleConnection(),
+      this.settings.pairedDevices
     ).open();
   }
 
@@ -310,7 +317,8 @@ export default class P2PSharePlugin extends Plugin {
       (peerId) => {
         this.sendToPeer(peerId, [], [folder]);
       },
-      () => this.toggleConnection()
+      () => this.toggleConnection(),
+      this.settings.pairedDevices
     ).open();
   }
 

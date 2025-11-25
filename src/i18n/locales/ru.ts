@@ -56,6 +56,7 @@ export const ru = {
 	'peer-modal.empty.hint': 'Убедитесь, что другие устройства подключены к тому же серверу PairDrop.',
 	'peer-modal.p2p-badge': 'P2P',
 	'peer-modal.p2p-tooltip': 'Поддерживается прямое peer-to-peer соединение',
+	'peer-modal.paired-tooltip': 'Связанное устройство',
 	'peer-modal.share-with': 'Поделиться с {0}',
 
 	// File Picker Modal

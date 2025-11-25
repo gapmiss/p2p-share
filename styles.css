@@ -153,6 +153,34 @@
   color: var(--text-muted);
 }
 
+.p2p-share-peer-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.p2p-share-paired-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
+}
+
+.p2p-share-paired-badge:hover {
+  opacity: 1;
+}
+
+.p2p-share-paired-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
 .p2p-share-rtc-badge {
   font-size: 0.7rem;
   padding: 2px 6px;

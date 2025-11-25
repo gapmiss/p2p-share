@@ -18,6 +18,8 @@ export class PeerManager extends Events {
     this.signaling = new SignalingClient(settings.serverUrl);
     // Set room secrets from paired devices before connecting
     this.signaling.setRoomSecrets(settings.pairedDevices.map((d) => d.roomSecret));
+    // Set discovery mode
+    this.signaling.setDiscoveryMode(settings.discoveryMode);
     this.setupSignalingHandlers();
   }
 
@@ -34,6 +36,18 @@ export class PeerManager extends Events {
       }
       this.connections.clear();
       this.trigger('server-disconnected');
+      this.trigger('peers-updated', []);
+    });
+
+    this.signaling.on('discovery-mode-switching', () => {
+      // Clear all peers and connections when switching discovery mode
+      // They will be repopulated when we rejoin the appropriate rooms
+      logger.debug('Clearing peers due to discovery mode switch');
+      this.peers.clear();
+      for (const connection of this.connections.values()) {
+        connection.close();
+      }
+      this.connections.clear();
       this.trigger('peers-updated', []);
     });
 
@@ -163,6 +177,17 @@ export class PeerManager extends Events {
 
   async connect(): Promise<void> {
     await this.signaling.connect();
+  }
+
+  async reconnect(): Promise<void> {
+    // Close all peer connections first
+    for (const connection of this.connections.values()) {
+      connection.close();
+    }
+    this.connections.clear();
+
+    // Use signaling's reconnect method which properly handles the disconnect/connect cycle
+    await this.signaling.reconnect();
   }
 
   getDisplayName(): string | null {
@@ -348,6 +373,17 @@ export class PeerManager extends Events {
     this.settings = settings;
     this.signaling.updateServerUrl(settings.serverUrl);
     this.signaling.setRoomSecrets(settings.pairedDevices.map((d) => d.roomSecret));
+    // Update discovery mode without reconnecting
+    this.signaling.setDiscoveryMode(settings.discoveryMode);
+  }
+
+  /**
+   * Switch discovery mode while connected.
+   * This will rejoin the appropriate rooms without a full reconnect.
+   */
+  switchDiscoveryMode(mode: 'auto' | 'paired-only'): void {
+    this.settings.discoveryMode = mode;
+    this.signaling.switchDiscoveryMode(mode);
   }
 
   // ============================================================================

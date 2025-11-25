@@ -1,5 +1,5 @@
 import { App, Menu, Modal, setIcon } from 'obsidian';
-import type { PeerInfo } from '../types';
+import type { PeerInfo, PairedDevice } from '../types';
 import type { PeerManager } from '../peer-manager';
 import { t } from '../i18n';
 
@@ -10,17 +10,20 @@ export class PeerModal extends Modal {
   private peersContainer: HTMLElement | null = null;
   private statusEl: HTMLElement | null = null;
   private connectBtn: HTMLButtonElement | null = null;
+  private pairedDevices: PairedDevice[];
 
   constructor(
     app: App,
     peerManager: PeerManager,
     onSelect: (peerId: string) => void,
-    onToggleConnection: () => Promise<void>
+    onToggleConnection: () => Promise<void>,
+    pairedDevices: PairedDevice[] = []
   ) {
     super(app);
     this.peerManager = peerManager;
     this.onSelect = onSelect;
     this.onToggleConnection = onToggleConnection;
+    this.pairedDevices = pairedDevices;
   }
 
   onOpen(): void {
@@ -131,12 +134,16 @@ export class PeerModal extends Modal {
   private renderPeerItem(peer: PeerInfo): void {
     if (!this.peersContainer) return;
 
+    // Check if this peer is paired
+    const peerDisplayName = peer.name.displayName || peer.name.deviceName || 'Unknown';
+    const isPaired = this.pairedDevices.some((d) => d.displayName === peerDisplayName);
+
     const item = this.peersContainer.createDiv({
       cls: 'p2p-share-peer-item',
       attr: {
         tabindex: '0',
         role: 'button',
-        'aria-label': `Share with ${peer.name.displayName || peer.name.deviceName || 'Unknown'}`
+        'aria-label': `Share with ${peerDisplayName}`
       }
     });
 
@@ -160,17 +167,27 @@ export class PeerModal extends Modal {
 
     // Info
     const info = item.createDiv({ cls: 'p2p-share-peer-info' });
-    info.createDiv({ cls: 'p2p-share-peer-name', text: peer.name.displayName || peer.name.deviceName || 'Unknown' });
+    info.createDiv({ cls: 'p2p-share-peer-name', text: peerDisplayName });
     const details = [peer.name.os, peer.name.browser].filter(Boolean).join(' • ') || 'Unknown device';
     info.createDiv({
       cls: 'p2p-share-peer-details',
       text: details,
     });
 
+    // Badges container
+    const badges = item.createDiv({ cls: 'p2p-share-peer-badges' });
+
+    // Paired indicator
+    if (isPaired) {
+      const pairedBadge = badges.createDiv({ cls: 'p2p-share-paired-badge' });
+      setIcon(pairedBadge, 'link');
+      pairedBadge.title = t('peer-modal.paired-tooltip');
+    }
+
     // RTC indicator
     if (peer.rtcSupported) {
-      const rtcBadge = item.createDiv({ cls: 'p2p-share-rtc-badge', text: 'P2P' });
-      rtcBadge.title = 'Direct peer-to-peer connection supported';
+      const rtcBadge = badges.createDiv({ cls: 'p2p-share-rtc-badge', text: t('peer-modal.p2p-badge') });
+      rtcBadge.title = t('peer-modal.p2p-tooltip');
     }
   }
 

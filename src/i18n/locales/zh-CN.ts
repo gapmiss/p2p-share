@@ -56,6 +56,7 @@ export const zhCN = {
 	'peer-modal.empty.hint': '请确保其他设备已连接到相同的 PairDrop 服务器。',
 	'peer-modal.p2p-badge': 'P2P',
 	'peer-modal.p2p-tooltip': '支持点对点直连',
+	'peer-modal.paired-tooltip': '已配对设备',
 	'peer-modal.share-with': '分享给 {0}',
 
 	// File Picker Modal

@@ -56,6 +56,7 @@ export const fr = {
 	'peer-modal.empty.hint': 'Assurez-vous que les autres appareils sont connectés au même serveur PairDrop.',
 	'peer-modal.p2p-badge': 'P2P',
 	'peer-modal.p2p-tooltip': 'Connexion directe pair-à-pair prise en charge',
+	'peer-modal.paired-tooltip': 'Appareil associé',
 	'peer-modal.share-with': 'Partager avec {0}',
 
 	// File Picker Modal

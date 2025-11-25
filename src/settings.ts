@@ -69,6 +69,10 @@ export class P2PShareSettingTab extends PluginSettingTab {
           .onChange(async (value: 'auto' | 'paired-only') => {
             this.plugin.settings.discoveryMode = value;
             await this.plugin.saveSettings();
+            // Switch rooms without disconnecting if currently connected
+            if (this.plugin.isConnected()) {
+              this.plugin.peerManager?.switchDiscoveryMode(value);
+            }
           })
       );
 
