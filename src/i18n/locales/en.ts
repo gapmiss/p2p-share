@@ -50,7 +50,7 @@ export const en = {
 	'notice.auto-accepting': 'P2P Share: Auto-accepting transfer from {0}',
 
 	// Peer Modal
-	'peer-modal.title': 'Select Peer',
+	'peer-modal.title': 'Select peer',
 	'peer-modal.you-appear-as': 'You appear as: {0}',
 	'peer-modal.disconnected.title': 'Disconnected',
 	'peer-modal.disconnected.hint': 'Connect to discover peers on your network.',
@@ -62,20 +62,20 @@ export const en = {
 	'peer-modal.share-with': 'Share with {0}',
 
 	// File Picker Modal
-	'file-picker.title': 'Select Files to Share',
+	'file-picker.title': 'Select files to share',
 	'file-picker.vault': 'Vault',
 	'file-picker.empty-folder': 'Empty folder',
-	'file-picker.select-all': 'Select All',
-	'file-picker.clear-selection': 'Clear Selection',
-	'file-picker.share-selected': 'Share Selected',
+	'file-picker.select-all': 'Select all',
+	'file-picker.clear-selection': 'Clear selection',
+	'file-picker.share-selected': 'Share selected',
 	'file-picker.no-items-selected': 'No items selected',
 	'file-picker.selected': '{0} selected ({1})',
 	'file-picker.files': '{0} file{1}',
 	'file-picker.folders': '{0} folder{1}',
 
 	// Transfer Modal
-	'transfer-modal.sending': 'Sending Files',
-	'transfer-modal.receiving': 'Receiving Files',
+	'transfer-modal.sending': 'Sending files',
+	'transfer-modal.receiving': 'Receiving files',
 	'transfer-modal.to': 'To: ',
 	'transfer-modal.from': 'From: ',
 	'transfer-modal.files-summary': '{0} file{1} ({2})',
@@ -90,7 +90,7 @@ export const en = {
 	'transfer-modal.file.complete': 'Complete',
 
 	// Incoming Transfer Modal
-	'incoming-modal.title': 'Incoming Transfer',
+	'incoming-modal.title': 'Incoming transfer',
 	'incoming-modal.from': 'From: ',
 	'incoming-modal.files-summary': '{0} file{1} ({2})',
 	'incoming-modal.more-files': '...and {0} more',
@@ -99,11 +99,11 @@ export const en = {
 	'incoming-modal.accept': 'Accept',
 
 	// Pairing Modal
-	'pairing-modal.title': 'Pair Devices',
+	'pairing-modal.title': 'Pair devices',
 	'pairing-modal.description': 'Pair with another device to share files across different networks.',
 	'pairing-modal.show-code': 'Show pairing code',
 	'pairing-modal.enter-code': 'Enter pairing code',
-	'pairing-modal.code-title': 'Pairing Code',
+	'pairing-modal.code-title': 'Pairing code',
 	'pairing-modal.code-instruction': 'Enter this code on the other device to pair.',
 	'pairing-modal.code-expires': 'The code expires in {0} second{1}.',
 	'pairing-modal.code-generating': 'Generating pairing code...',
@@ -111,10 +111,10 @@ export const en = {
 	'pairing-modal.code-click-to-copy': 'Click to copy pairing code',
 	'pairing-modal.enter-instruction': 'Enter the 6-digit code shown on the other device.',
 	'pairing-modal.join': 'Join',
-	'pairing-modal.success.title': 'Paired Successfully!',
+	'pairing-modal.success.title': 'Paired successfully!',
 	'pairing-modal.success.message': 'You are now paired with "{0}".',
 	'pairing-modal.success.hint': 'You can now share files with this device from anywhere.',
-	'pairing-modal.error.title': 'Pairing Failed',
+	'pairing-modal.error.title': 'Pairing failed',
 	'pairing-modal.error.unknown': 'An unknown error occurred.',
 	'pairing-modal.error.invalid-code': 'Invalid or expired pairing code.',
 	'pairing-modal.error.canceled': 'Pairing was canceled.',
@@ -125,18 +125,18 @@ export const en = {
 	'confirm-modal.remove': 'Remove',
 
 	// Settings
-	'settings.title': 'P2P Share Settings',
-	'settings.server.title': 'Server Configuration',
+	'settings.title': 'P2P Share settings',
+	'settings.server.title': 'Server configuration',
 	'settings.server.url.name': 'Signaling server URL',
 	'settings.server.url.desc': 'WebSocket URL for your self-hosted PairDrop server (e.g., wss://your-server.com or ws://localhost:3000)',
 	'settings.server.url.placeholder': 'wss://your-pairdrop-server.com',
 
-	'settings.files.title': 'File Settings',
+	'settings.files.title': 'File settings',
 	'settings.files.location.name': 'Save location',
 	'settings.files.location.desc': 'Folder in your vault where received files will be saved',
 	'settings.files.location.placeholder': 'P2P Share',
 
-	'settings.discovery.title': 'Discovery Settings',
+	'settings.discovery.title': 'Discovery settings',
 	'settings.discovery.mode.name': 'Discovery mode',
 	'settings.discovery.mode.desc': 'How to discover other peers',
 	'settings.discovery.mode.auto': 'Auto-discover on network',
@@ -155,23 +155,23 @@ export const en = {
 	'settings.behavior.system-notifications.name': 'System notifications',
 	'settings.behavior.system-notifications.desc': 'Show OS-level notifications for incoming transfers (desktop only)',
 
-	'settings.connection.title': 'Connection Status',
+	'settings.connection.title': 'Connection status',
 	'settings.connection.reconnect.name': 'Reconnect',
 	'settings.connection.reconnect.desc': 'Manually reconnect to the signaling server',
 	'settings.connection.reconnect.button': 'Reconnect',
 
-	'settings.paired-devices.title': 'Paired Devices',
-	'settings.paired-devices.empty': 'No paired devices. Use "Pair with device" command to pair across networks.',
+	'settings.paired-devices.title': 'Paired devices',
+	'settings.paired-devices.empty': 'No paired devices.',
 	'settings.paired-devices.paired-at': 'Paired {0}',
 	'settings.paired-devices.auto-accept.name': 'Auto-accept',
 	'settings.paired-devices.auto-accept.desc': 'Automatically accept transfers from this device',
 	'settings.paired-devices.remove.label': 'Remove pairing',
 	'settings.paired-devices.remove-all.name': 'Remove all paired devices',
 	'settings.paired-devices.remove-all.desc': 'This will unpair all devices',
-	'settings.paired-devices.remove-all.button': 'Remove All',
-	'settings.paired-devices.remove-confirm.title': 'Remove Paired Device',
+	'settings.paired-devices.remove-all.button': 'Remove all',
+	'settings.paired-devices.remove-confirm.title': 'Remove paired device',
 	'settings.paired-devices.remove-confirm.message': 'Are you sure you want to remove "{0}"? You will need to pair again to share files with this device.',
-	'settings.paired-devices.remove-all-confirm.title': 'Remove All Paired Devices',
+	'settings.paired-devices.remove-all-confirm.title': 'Remove all paired devices',
 	'settings.paired-devices.remove-all-confirm.message': 'Are you sure you want to remove all {0} paired devices? You will need to pair again with each device.',
 
 	// Date formatting

@@ -9,6 +9,10 @@ import { t } from './i18n';
 export class P2PShareSettingTab extends PluginSettingTab {
   plugin: P2PSharePlugin;
   private boundRefreshHandler = this.refreshDisplay.bind(this);
+  private boundUpdateConnectionStatus = this.updateConnectionStatus.bind(this);
+  private statusIconEl: HTMLElement | null = null;
+  private statusTextEl: HTMLElement | null = null;
+  private connectionButton: HTMLButtonElement | null = null;
 
   constructor(app: App, plugin: P2PSharePlugin) {
     super(app, plugin);
@@ -17,6 +21,30 @@ export class P2PShareSettingTab extends PluginSettingTab {
 
   private refreshDisplay(): void {
     this.display();
+  }
+
+  private updateConnectionStatus(): void {
+    const isConnected = this.plugin.isConnected();
+
+    // Update status icon
+    if (this.statusIconEl) {
+      this.statusIconEl.empty();
+      setIcon(this.statusIconEl, isConnected ? 'link' : 'unlink');
+      this.statusIconEl.style.color = isConnected ? 'var(--text-success)' : 'var(--text-error)';
+    }
+
+    // Update status text
+    if (this.statusTextEl) {
+      this.statusTextEl.setText(isConnected ? t('common.connected') : t('common.disconnected'));
+      this.statusTextEl.className = isConnected
+        ? 'p2p-share-status-connected'
+        : 'p2p-share-status-disconnected';
+    }
+
+    // Update button text
+    if (this.connectionButton) {
+      this.connectionButton.setText(isConnected ? t('common.disconnect') : t('common.connect'));
+    }
   }
 
   display(): void {
@@ -28,16 +56,20 @@ export class P2PShareSettingTab extends PluginSettingTab {
       // Remove previous listeners first to avoid duplicates
       this.plugin.peerManager.off('secret-room-deleted', this.boundRefreshHandler);
       this.plugin.peerManager.off('paired-device-identified', this.boundRefreshHandler);
+      this.plugin.peerManager.off('server-connected', this.boundUpdateConnectionStatus);
+      this.plugin.peerManager.off('server-disconnected', this.boundUpdateConnectionStatus);
 
       // Add new listeners
       this.plugin.peerManager.on('secret-room-deleted', this.boundRefreshHandler);
       this.plugin.peerManager.on('paired-device-identified', this.boundRefreshHandler);
+      this.plugin.peerManager.on('server-connected', this.boundUpdateConnectionStatus);
+      this.plugin.peerManager.on('server-disconnected', this.boundUpdateConnectionStatus);
     }
 
-    containerEl.createEl('h2', { text: t('settings.title') });
-
-    // Server Configuration
-    containerEl.createEl('h3', { text: t('settings.server.title') });
+    // Connection & Server
+    new Setting(containerEl)
+      .setHeading()
+      .setName(t('settings.server.title'));
 
     new Setting(containerEl)
       .setName(t('settings.server.url.name'))
@@ -52,27 +84,44 @@ export class P2PShareSettingTab extends PluginSettingTab {
           })
       );
 
-    // File Settings
-    containerEl.createEl('h3', { text: t('settings.files.title') });
+    const statusContainer = containerEl.createDiv({ cls: 'p2p-share-status' });
+
+    // Status icon (link/unlink)
+    this.statusIconEl = statusContainer.createDiv({ cls: 'p2p-share-status-icon' });
+    const isConnected = this.plugin.isConnected();
+    setIcon(this.statusIconEl, isConnected ? 'link' : 'unlink');
+    this.statusIconEl.style.color = isConnected ? 'var(--text-success)' : 'var(--text-error)';
+
+    // Status text
+    this.statusTextEl = statusContainer.createSpan({
+      text: isConnected ? t('common.connected') : t('common.disconnected'),
+      cls: isConnected ? 'p2p-share-status-connected' : 'p2p-share-status-disconnected'
+    });
 
     new Setting(containerEl)
-      .setName(t('settings.files.location.name'))
-      .setDesc(t('settings.files.location.desc'))
-      .addSearch((search) => {
-        search
-          .setPlaceholder(t('settings.files.location.placeholder'))
-          .setValue(this.plugin.settings.saveLocation)
-          .onChange(async (value) => {
-            this.plugin.settings.saveLocation = value;
-            await this.plugin.saveSettings();
+      .setName(t('settings.connection.reconnect.name'))
+      .setDesc(t('settings.connection.reconnect.desc'))
+      .addButton((button) => {
+        this.connectionButton = button.buttonEl;
+        button
+          .setButtonText(isConnected ? t('common.disconnect') : t('common.connect'))
+          .onClick(async () => {
+            await this.plugin.toggleConnection();
+            // Status will update automatically via event listener
           });
-
-        // Add folder suggest
-        new FolderSuggest(this.app, search.inputEl);
       });
 
-    // Discovery Settings
-    containerEl.createEl('h3', { text: t('settings.discovery.title') });
+    new Setting(containerEl)
+      .setName(t('settings.behavior.auto-connect.name'))
+      .setDesc(t('settings.behavior.auto-connect.desc'))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.autoConnect)
+          .onChange(async (value) => {
+            this.plugin.settings.autoConnect = value;
+            await this.plugin.saveSettings();
+          })
+      );
 
     new Setting(containerEl)
       .setName(t('settings.discovery.mode.name'))
@@ -92,76 +141,25 @@ export class P2PShareSettingTab extends PluginSettingTab {
           })
       );
 
-    // Behavior Settings
-    containerEl.createEl('h3', { text: t('settings.behavior.title') });
-
+    // Paired Devices
     new Setting(containerEl)
-      .setName(t('settings.behavior.log-level.name'))
-      .setDesc(t('settings.behavior.log-level.desc'))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption('none', t('settings.behavior.log-level.none'))
-          .addOption('error', t('settings.behavior.log-level.error'))
-          .addOption('warn', t('settings.behavior.log-level.warn'))
-          .addOption('info', t('settings.behavior.log-level.info'))
-          .addOption('debug', t('settings.behavior.log-level.debug'))
-          .setValue(this.plugin.settings.logLevel)
-          .onChange(async (value: LogLevel) => {
-            this.plugin.settings.logLevel = value;
-            await this.plugin.saveSettings();
-          })
-      );
+      .setHeading()
+      .setName(t('settings.paired-devices.title'));
 
+    // Add "Pair with device" button
     new Setting(containerEl)
-      .setName(t('settings.behavior.auto-connect.name'))
-      .setDesc(t('settings.behavior.auto-connect.desc'))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoConnect)
-          .onChange(async (value) => {
-            this.plugin.settings.autoConnect = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t('settings.behavior.system-notifications.name'))
-      .setDesc(t('settings.behavior.system-notifications.desc'))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.useSystemNotifications)
-          .onChange(async (value) => {
-            this.plugin.settings.useSystemNotifications = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    // Connection Status
-    containerEl.createEl('h3', { text: t('settings.connection.title') });
-
-    const statusContainer = containerEl.createDiv({ cls: 'p2p-share-status' });
-    const statusText = statusContainer.createSpan({
-      text: this.plugin.isConnected() ? t('common.connected') : t('common.disconnected'),
-      cls: this.plugin.isConnected() ? 'p2p-share-status-connected' : 'p2p-share-status-disconnected'
-    });
-
-    new Setting(containerEl)
-      .setName(t('settings.connection.reconnect.name'))
-      .setDesc(t('settings.connection.reconnect.desc'))
+      .setName(t('command.pair-device'))
+      .setDesc(t('pairing-modal.description'))
       .addButton((button) =>
         button
-          .setButtonText(t('settings.connection.reconnect.button'))
-          .onClick(async () => {
-            await this.plugin.reconnect();
-            statusText.setText(this.plugin.isConnected() ? t('common.connected') : t('common.disconnected'));
-            statusText.className = this.plugin.isConnected()
-              ? 'p2p-share-status-connected'
-              : 'p2p-share-status-disconnected';
+          .setButtonText(t('command.pair-device'))
+          .setIcon('link')
+          .onClick(() => {
+            // Close settings and open pairing modal
+            this.plugin.app.setting.close();
+            this.plugin.app.commands.executeCommandById('p2p-share:p2p-share-pair-device');
           })
       );
-
-    // Paired Devices Section
-    containerEl.createEl('h3', { text: t('settings.paired-devices.title') });
 
     const pairedDevices = this.plugin.settings.pairedDevices;
 
@@ -204,6 +202,56 @@ export class P2PShareSettingTab extends PluginSettingTab {
           );
       }
     }
+
+    // Files & Behavior
+    new Setting(containerEl)
+      .setHeading()
+      .setName(t('settings.files.title'));
+
+    new Setting(containerEl)
+      .setName(t('settings.files.location.name'))
+      .setDesc(t('settings.files.location.desc'))
+      .addSearch((search) => {
+        search
+          .setPlaceholder(t('settings.files.location.placeholder'))
+          .setValue(this.plugin.settings.saveLocation)
+          .onChange(async (value) => {
+            this.plugin.settings.saveLocation = value;
+            await this.plugin.saveSettings();
+          });
+
+        // Add folder suggest
+        new FolderSuggest(this.app, search.inputEl);
+      });
+
+    new Setting(containerEl)
+      .setName(t('settings.behavior.system-notifications.name'))
+      .setDesc(t('settings.behavior.system-notifications.desc'))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.useSystemNotifications)
+          .onChange(async (value) => {
+            this.plugin.settings.useSystemNotifications = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t('settings.behavior.log-level.name'))
+      .setDesc(t('settings.behavior.log-level.desc'))
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption('none', t('settings.behavior.log-level.none'))
+          .addOption('error', t('settings.behavior.log-level.error'))
+          .addOption('warn', t('settings.behavior.log-level.warn'))
+          .addOption('info', t('settings.behavior.log-level.info'))
+          .addOption('debug', t('settings.behavior.log-level.debug'))
+          .setValue(this.plugin.settings.logLevel)
+          .onChange(async (value: LogLevel) => {
+            this.plugin.settings.logLevel = value;
+            await this.plugin.saveSettings();
+          })
+      );
   }
 
   private renderPairedDevice(container: HTMLElement, device: PairedDevice): void {
@@ -276,6 +324,11 @@ export class P2PShareSettingTab extends PluginSettingTab {
     if (this.plugin.peerManager) {
       this.plugin.peerManager.off('secret-room-deleted', this.boundRefreshHandler);
       this.plugin.peerManager.off('paired-device-identified', this.boundRefreshHandler);
+      this.plugin.peerManager.off('server-connected', this.boundUpdateConnectionStatus);
+      this.plugin.peerManager.off('server-disconnected', this.boundUpdateConnectionStatus);
     }
+    this.statusIconEl = null;
+    this.statusTextEl = null;
+    this.connectionButton = null;
   }
 }
