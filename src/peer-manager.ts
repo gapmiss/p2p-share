@@ -398,11 +398,11 @@ export class PeerManager extends Events {
 
   /**
    * Switch discovery mode while connected.
-   * This will rejoin the appropriate rooms without a full reconnect.
+   * This will reconnect to join only the appropriate rooms.
    */
-  switchDiscoveryMode(mode: 'auto' | 'paired-only'): void {
+  async switchDiscoveryMode(mode: 'auto' | 'paired-only'): Promise<void> {
     this.settings.discoveryMode = mode;
-    this.signaling.switchDiscoveryMode(mode);
+    await this.signaling.switchDiscoveryMode(mode);
   }
 
   // ============================================================================

@@ -414,8 +414,11 @@ export class SignalingClient extends Events {
   /**
    * Switch discovery mode and rejoin appropriate rooms.
    * Requires an active connection.
+   *
+   * Note: Since PairDrop protocol doesn't support leaving individual rooms,
+   * we must reconnect to properly apply the new discovery mode.
    */
-  switchDiscoveryMode(mode: 'auto' | 'paired-only'): void {
+  async switchDiscoveryMode(mode: 'auto' | 'paired-only'): Promise<void> {
     if (!this.isConnected()) {
       logger.warn('Cannot switch discovery mode while disconnected');
       return;
@@ -430,23 +433,11 @@ export class SignalingClient extends Events {
 
     logger.info('Switching discovery mode from', oldMode, 'to', mode);
 
-    // Emit event to clear current peers before rejoining rooms
+    // Emit event to clear current peers before reconnecting
     this.trigger('discovery-mode-switching');
 
-    // Rejoin appropriate rooms based on new mode
-    if (mode === 'auto') {
-      // Switch to auto: join both IP room and paired device rooms
-      this.joinIpRoom();
-    } else if (mode === 'paired-only') {
-      // Switch to paired-only: only join paired device rooms
-      if (this.roomSecrets.length > 0) {
-        logger.debug('Rejoining paired device rooms only');
-        this.send({ type: 'room-secrets', roomSecrets: this.roomSecrets });
-      } else {
-        logger.warn('paired-only mode but no paired devices');
-        // Emit empty peers list since we're not in any rooms
-        this.trigger('peers', { peers: [], roomType: null, roomId: null });
-      }
-    }
+    // Reconnect to join only the appropriate rooms
+    // This is necessary because PairDrop doesn't support leaving the IP room without disconnecting
+    await this.reconnect();
   }
 }
