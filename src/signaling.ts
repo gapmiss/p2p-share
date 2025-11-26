@@ -189,17 +189,21 @@ export class SignalingClient extends Events {
     this.ws?.send(JSON.stringify(message));
   }
 
-  sendSignal(recipientId: string, message: object): void {
-    if (!this.currentRoomId) {
+  sendSignal(recipientId: string, message: object, roomType?: string, roomId?: string): void {
+    // Use provided room info if available, otherwise fall back to current room
+    const targetRoomType = roomType || this.currentRoomType;
+    const targetRoomId = roomId || this.currentRoomId;
+
+    if (!targetRoomId) {
       logger.warn('Cannot send signal, not in a room yet');
       return;
     }
-    logger.debug('Sending signal to', recipientId, message);
+    logger.debug('Sending signal to', recipientId, 'in room', targetRoomType, targetRoomId, message);
     this.send({
       type: 'signal',
       to: recipientId,
-      roomType: this.currentRoomType,
-      roomId: this.currentRoomId,
+      roomType: targetRoomType,
+      roomId: targetRoomId,
       ...message,
     });
   }

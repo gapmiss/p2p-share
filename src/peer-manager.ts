@@ -11,6 +11,7 @@ export class PeerManager extends Events {
   private vault: Vault;
   private settings: P2PShareSettings;
   private peerRoomSecrets: Map<string, string> = new Map(); // Track peerId -> roomSecret mapping
+  private peerRooms: Map<string, { roomType: string; roomId: string }> = new Map(); // Track peerId -> room info
 
   constructor(vault: Vault, settings: P2PShareSettings) {
     super();
@@ -57,6 +58,9 @@ export class PeerManager extends Events {
       for (const peer of data.peers) {
         this.peers.set(peer.id, peer);
 
+        // Track room info for ALL peers (needed for correct signaling)
+        this.peerRooms.set(peer.id, { roomType: data.roomType, roomId: data.roomId });
+
         // Track roomSecret for paired devices
         if (data.roomType === 'secret' && data.roomId) {
           this.peerRoomSecrets.set(peer.id, data.roomId);
@@ -78,6 +82,9 @@ export class PeerManager extends Events {
     this.signaling.on('peer-joined', (data: { peer: PeerInfo; roomType: string; roomId: string }) => {
       this.peers.set(data.peer.id, data.peer);
 
+      // Track room info for ALL peers (needed for correct signaling)
+      this.peerRooms.set(data.peer.id, { roomType: data.roomType, roomId: data.roomId });
+
       // Track roomSecret for paired devices
       if (data.roomType === 'secret' && data.roomId) {
         this.peerRoomSecrets.set(data.peer.id, data.roomId);
@@ -98,6 +105,7 @@ export class PeerManager extends Events {
 
     this.signaling.on('peer-left', (peerId: string) => {
       this.peers.delete(peerId);
+      this.peerRooms.delete(peerId); // Clean up room info tracking
       this.peerRoomSecrets.delete(peerId); // Clean up roomSecret tracking
       const connection = this.connections.get(peerId);
       if (connection) {
@@ -120,7 +128,8 @@ export class PeerManager extends Events {
 
       if (!connection) {
         // Create new connection for incoming peer
-        connection = new RTCPeer(senderId, this.signaling, false);
+        const roomInfo = this.peerRooms.get(senderId);
+        connection = new RTCPeer(senderId, this.signaling, false, roomInfo?.roomType, roomInfo?.roomId);
         this.setupPeerHandlers(connection);
         this.connections.set(senderId, connection);
       }
@@ -243,7 +252,8 @@ export class PeerManager extends Events {
     }
 
     if (!connection) {
-      connection = new RTCPeer(peerId, this.signaling, true);
+      const roomInfo = this.peerRooms.get(peerId);
+      connection = new RTCPeer(peerId, this.signaling, true, roomInfo?.roomType, roomInfo?.roomId);
       this.setupPeerHandlers(connection);
       this.connections.set(peerId, connection);
       await connection.connect();
@@ -443,6 +453,10 @@ export class PeerManager extends Events {
 
   getRoomSecretForPeer(peerId: string): string | null {
     return this.peerRoomSecrets.get(peerId) || null;
+  }
+
+  getRoomInfoForPeer(peerId: string): { roomType: string; roomId: string } | null {
+    return this.peerRooms.get(peerId) || null;
   }
 
   broadcastDisplayNameToAllPeers(displayName: string): void {

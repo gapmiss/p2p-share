@@ -135,6 +135,8 @@ export class RTCPeer extends Events {
   private connection: RTCPeerConnection | null = null;
   private dataChannel: RTCDataChannel | null = null;
   private isInitiator: boolean;
+  private roomType: string | null = null;
+  private roomId: string | null = null;
 
   // Sender state
   private filesRequested: { metadata: FileMetadata; data: ArrayBuffer }[] | null = null;
@@ -153,11 +155,13 @@ export class RTCPeer extends Events {
   private filesReceived: { metadata: FileMetadata; data: ArrayBuffer }[] = [];
   private lastProgress = 0;
 
-  constructor(peerId: string, signaling: SignalingClient, isInitiator: boolean) {
+  constructor(peerId: string, signaling: SignalingClient, isInitiator: boolean, roomType?: string, roomId?: string) {
     super();
     this.peerId = peerId;
     this.signaling = signaling;
     this.isInitiator = isInitiator;
+    this.roomType = roomType || null;
+    this.roomId = roomId || null;
   }
 
   async connect(): Promise<void> {
@@ -167,7 +171,7 @@ export class RTCPeer extends Events {
       if (event.candidate) {
         this.signaling.sendSignal(this.peerId, {
           ice: event.candidate.toJSON(),
-        });
+        }, this.roomType || undefined, this.roomId || undefined);
       }
     };
 
@@ -197,7 +201,7 @@ export class RTCPeer extends Events {
 
       this.signaling.sendSignal(this.peerId, {
         sdp: offer,
-      });
+      }, this.roomType || undefined, this.roomId || undefined);
     }
   }
 
@@ -216,7 +220,7 @@ export class RTCPeer extends Events {
         await this.connection!.setLocalDescription(answer);
         this.signaling.sendSignal(this.peerId, {
           sdp: answer,
-        });
+        }, this.roomType || undefined, this.roomId || undefined);
       }
     }
 
