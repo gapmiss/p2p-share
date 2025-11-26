@@ -27,7 +27,7 @@ export const ru = {
 
 	// Status bar
 	'status-bar.peers': '{0} устройств{1}',
-	'status-bar.offline': 'P2P Share: Не в сети',
+	'status-bar.offline': 'Не в сети',
 	'status-bar.menu.show-peers': 'Показать устройства',
 	'status-bar.menu.pair-device': 'Связать с устройством',
 

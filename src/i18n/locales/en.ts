@@ -27,7 +27,7 @@ export const en = {
 
 	// Status bar
 	'status-bar.peers': '{0} peer{1}',
-	'status-bar.offline': 'P2P Share: Offline',
+	'status-bar.offline': 'Offline',
 	'status-bar.menu.show-peers': 'Show peers',
 	'status-bar.menu.pair-device': 'Pair with device',
 

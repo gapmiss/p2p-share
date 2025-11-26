@@ -1,4 +1,4 @@
-import { Menu, Notice, Plugin, TFile, TFolder, addIcon } from 'obsidian';
+import { Menu, Notice, Plugin, TFile, TFolder, addIcon, setIcon } from 'obsidian';
 import { P2PShareSettingTab } from './settings';
 import { PeerManager } from './peer-manager';
 import { PeerModal, FilePickerModal, TransferModal, IncomingTransferModal, PairingModal } from './modals';
@@ -279,14 +279,26 @@ export default class P2PSharePlugin extends Plugin {
     const isConnected = this.peerManager?.isConnected() ?? false;
     const peerCount = this.peerManager?.getPeers().length ?? 0;
 
+    // Clear existing content
+    this.statusBarItem.empty();
+    this.statusBarItem.removeClass('p2p-share-disconnected');
+
+    // Add icon (link for connected, unlink for disconnected)
+    const iconContainer = this.statusBarItem.createSpan({ cls: 'p2p-share-status-icon' });
+    setIcon(iconContainer, isConnected ? 'link' : 'unlink');
+
+    // Set icon color based on connection status
     if (isConnected) {
-      const peerText = t('status-bar.peers', peerCount, peerCount !== 1 ? 's' : '');
-      this.statusBarItem.setText(`${t('plugin.name')}: ${peerText}`);
-      this.statusBarItem.removeClass('p2p-share-disconnected');
+      iconContainer.style.color = 'var(--text-success)';
     } else {
-      this.statusBarItem.setText(t('status-bar.offline'));
-      this.statusBarItem.addClass('p2p-share-disconnected');
+      iconContainer.style.color = 'var(--text-error)';
     }
+
+    // Add peer count text
+    const peerText = isConnected
+      ? t('status-bar.peers', peerCount, peerCount !== 1 ? 's' : '')
+      : t('status-bar.offline');
+    this.statusBarItem.createSpan({ text: ` ${peerText}` });
   }
 
   private showPeerModal(): void {

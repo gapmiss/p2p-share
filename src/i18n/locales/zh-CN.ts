@@ -27,7 +27,7 @@ export const zhCN = {
 
 	// Status bar
 	'status-bar.peers': '{0} 个设备{1}',
-	'status-bar.offline': 'P2P Share: 离线',
+	'status-bar.offline': '离线',
 	'status-bar.menu.show-peers': '显示设备',
 	'status-bar.menu.pair-device': '配对设备',
 

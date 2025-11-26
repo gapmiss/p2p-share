@@ -19,8 +19,11 @@
 }
 
 /* Status Bar */
-.p2p-share-disconnected {
-  color: var(--text-error);
+.p2p-share-status-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-right: var(--size-4-1);
 }
 
 /* Modal Common Styles */
