@@ -8,31 +8,31 @@ import { t } from './i18n';
 
 export class P2PShareSettingTab extends PluginSettingTab {
   plugin: P2PSharePlugin;
-  private eventRefs: Array<() => void> = [];
+  private boundRefreshHandler = this.refreshDisplay.bind(this);
 
   constructor(app: App, plugin: P2PSharePlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
 
+  private refreshDisplay(): void {
+    this.display();
+  }
+
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
 
-    // Clean up previous event listeners
-    this.eventRefs.forEach(off => off());
-    this.eventRefs = [];
-
     // Listen for paired device changes and refresh the display
-    const pairedDevicesChangedHandler = () => {
-      this.display();
-    };
-    this.eventRefs.push(
-      this.plugin.peerManager?.on('secret-room-deleted', pairedDevicesChangedHandler) ?? (() => {})
-    );
-    this.eventRefs.push(
-      this.plugin.peerManager?.on('paired-device-identified', pairedDevicesChangedHandler) ?? (() => {})
-    );
+    if (this.plugin.peerManager) {
+      // Remove previous listeners first to avoid duplicates
+      this.plugin.peerManager.off('secret-room-deleted', this.boundRefreshHandler);
+      this.plugin.peerManager.off('paired-device-identified', this.boundRefreshHandler);
+
+      // Add new listeners
+      this.plugin.peerManager.on('secret-room-deleted', this.boundRefreshHandler);
+      this.plugin.peerManager.on('paired-device-identified', this.boundRefreshHandler);
+    }
 
     containerEl.createEl('h2', { text: t('settings.title') });
 
@@ -261,7 +261,9 @@ export class P2PShareSettingTab extends PluginSettingTab {
 
   hide(): void {
     // Clean up event listeners when settings tab is closed
-    this.eventRefs.forEach(off => off());
-    this.eventRefs = [];
+    if (this.plugin.peerManager) {
+      this.plugin.peerManager.off('secret-room-deleted', this.boundRefreshHandler);
+      this.plugin.peerManager.off('paired-device-identified', this.boundRefreshHandler);
+    }
   }
 }
