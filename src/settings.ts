@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, setIcon } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting, setIcon } from 'obsidian';
 import type P2PSharePlugin from './main';
 import type { PairedDevice } from './types';
 import type { LogLevel } from './logger';
@@ -79,7 +79,13 @@ export class P2PShareSettingTab extends PluginSettingTab {
           .setPlaceholder(t('settings.server.url.placeholder'))
           .setValue(this.plugin.settings.serverUrl)
           .onChange(async (value) => {
-            this.plugin.settings.serverUrl = value;
+            // Validate WebSocket URL format
+            const trimmed = value.trim();
+            if (trimmed && !this.isValidWebSocketUrl(trimmed)) {
+              new Notice('Invalid server URL. Must start with ws:// or wss://');
+              return;
+            }
+            this.plugin.settings.serverUrl = trimmed;
             await this.plugin.saveSettings();
           })
       );
@@ -316,6 +322,18 @@ export class P2PShareSettingTab extends PluginSettingTab {
       return t('date.days-ago', diffDays);
     } else {
       return date.toLocaleDateString();
+    }
+  }
+
+  /**
+   * Validate that a URL is a valid WebSocket URL
+   */
+  private isValidWebSocketUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'ws:' || parsed.protocol === 'wss:';
+    } catch {
+      return false;
     }
   }
 

@@ -365,8 +365,16 @@ export class SignalingClient extends Events {
       this.trigger('error', new Error('Not connected to server'));
       return;
     }
-    logger.debug('Joining device pairing with key', pairKey);
-    this.send({ type: 'pair-device-join', pairKey });
+
+    // Validate pairing code format (6 digits)
+    const trimmed = pairKey.trim();
+    if (!/^\d{6}$/.test(trimmed)) {
+      this.trigger('error', new Error('Invalid pairing code format. Must be 6 digits.'));
+      return;
+    }
+
+    logger.debug('Joining device pairing with key', trimmed);
+    this.send({ type: 'pair-device-join', pairKey: trimmed });
   }
 
   /**

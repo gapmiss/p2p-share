@@ -165,67 +165,84 @@ export class RTCPeer extends Events {
   }
 
   async connect(): Promise<void> {
-    this.connection = new RTCPeerConnection(RTC_CONFIG);
+    try {
+      this.connection = new RTCPeerConnection(RTC_CONFIG);
 
-    this.connection.onicecandidate = (event) => {
-      if (event.candidate) {
+      this.connection.onicecandidate = (event) => {
+        if (event.candidate) {
+          this.signaling.sendSignal(this.peerId, {
+            ice: event.candidate.toJSON(),
+          }, this.roomType || undefined, this.roomId || undefined);
+        }
+      };
+
+      this.connection.oniceconnectionstatechange = () => {
+        const state = this.connection?.iceConnectionState;
+        logger.debug(`ICE connection state: ${state}`);
+
+        if (state === 'connected') {
+          this.trigger('connected');
+        } else if (state === 'disconnected' || state === 'failed') {
+          this.trigger('disconnected');
+        }
+      };
+
+      this.connection.ondatachannel = (event) => {
+        this.setupDataChannel(event.channel);
+      };
+
+      // Add error handler for RTCPeerConnection
+      this.connection.onicecandidateerror = (event) => {
+        logger.error('ICE candidate error:', event);
+      };
+
+      if (this.isInitiator) {
+        this.dataChannel = this.connection.createDataChannel('data-channel', {
+          ordered: true,
+        });
+        this.setupDataChannel(this.dataChannel);
+
+        const offer = await this.connection.createOffer();
+        await this.connection.setLocalDescription(offer);
+
         this.signaling.sendSignal(this.peerId, {
-          ice: event.candidate.toJSON(),
+          sdp: offer,
         }, this.roomType || undefined, this.roomId || undefined);
       }
-    };
-
-    this.connection.oniceconnectionstatechange = () => {
-      const state = this.connection?.iceConnectionState;
-      logger.debug(`ICE connection state: ${state}`);
-
-      if (state === 'connected') {
-        this.trigger('connected');
-      } else if (state === 'disconnected' || state === 'failed') {
-        this.trigger('disconnected');
-      }
-    };
-
-    this.connection.ondatachannel = (event) => {
-      this.setupDataChannel(event.channel);
-    };
-
-    if (this.isInitiator) {
-      this.dataChannel = this.connection.createDataChannel('data-channel', {
-        ordered: true,
-      });
-      this.setupDataChannel(this.dataChannel);
-
-      const offer = await this.connection.createOffer();
-      await this.connection.setLocalDescription(offer);
-
-      this.signaling.sendSignal(this.peerId, {
-        sdp: offer,
-      }, this.roomType || undefined, this.roomId || undefined);
+    } catch (error) {
+      logger.error('WebRTC connection failed:', error);
+      this.trigger('error', error);
+      throw error;
     }
   }
 
   async handleSignal(signal: { sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit }): Promise<void> {
-    logger.debug('Handling signal', signal);
+    try {
+      logger.debug('Handling signal', signal);
 
-    if (!this.connection) {
-      await this.connect();
-    }
-
-    if (signal.sdp) {
-      await this.connection!.setRemoteDescription(signal.sdp);
-
-      if (signal.sdp.type === 'offer') {
-        const answer = await this.connection!.createAnswer();
-        await this.connection!.setLocalDescription(answer);
-        this.signaling.sendSignal(this.peerId, {
-          sdp: answer,
-        }, this.roomType || undefined, this.roomId || undefined);
+      if (!this.connection) {
+        await this.connect();
       }
-    }
 
-    if (signal.ice) {
-      await this.connection!.addIceCandidate(new RTCIceCandidate(signal.ice));
+      if (signal.sdp) {
+        await this.connection!.setRemoteDescription(signal.sdp);
+
+        if (signal.sdp.type === 'offer') {
+          const answer = await this.connection!.createAnswer();
+          await this.connection!.setLocalDescription(answer);
+          this.signaling.sendSignal(this.peerId, {
+            sdp: answer,
+          }, this.roomType || undefined, this.roomId || undefined);
+        }
+      }
+
+      if (signal.ice) {
+        await this.connection!.addIceCandidate(new RTCIceCandidate(signal.ice));
+      }
+    } catch (error) {
+      logger.error('WebRTC signal handling failed:', error);
+      this.trigger('error', error);
+      throw error;
     }
   }
 
@@ -268,60 +285,67 @@ export class RTCPeer extends Events {
    * Flow: request -> wait for response -> send files with partitions
    */
   async sendFiles(files: { metadata: FileMetadata; data: ArrayBuffer }[]): Promise<void> {
-    if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
-      throw new Error('Data channel not ready');
-    }
+    try {
+      if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
+        throw new Error('Data channel not ready');
+      }
 
-    // Build request with file headers
-    const header: PairDropFileInfo[] = files.map((f) => ({
-      name: f.metadata.name,
-      mime: f.metadata.type,
-      size: f.data.byteLength,
-      path: f.metadata.path, // Include path for plugin-to-plugin folder structure
-    }));
+      // Build request with file headers
+      const header: PairDropFileInfo[] = files.map((f) => ({
+        name: f.metadata.name,
+        mime: f.metadata.type,
+        size: f.data.byteLength,
+        path: f.metadata.path, // Include path for plugin-to-plugin folder structure
+      }));
 
-    const totalSize = files.reduce((sum, f) => sum + f.data.byteLength, 0);
-    const imagesOnly = files.every((f) => f.metadata.type.startsWith('image/'));
+      const totalSize = files.reduce((sum, f) => sum + f.data.byteLength, 0);
+      const imagesOnly = files.every((f) => f.metadata.type.startsWith('image/'));
 
-    // Store files for later sending
-    this.filesRequested = files;
+      // Store files for later sending
+      this.filesRequested = files;
 
-    // Send request
-    const request: PairDropRequest = {
-      type: 'request',
-      header,
-      totalSize,
-      imagesOnly,
-    };
-    this.sendJSON(request);
+      // Send request
+      const request: PairDropRequest = {
+        type: 'request',
+        header,
+        totalSize,
+        imagesOnly,
+      };
+      this.sendJSON(request);
 
-    logger.debug('Sent transfer request, waiting for response...');
+      logger.debug('Sent transfer request, waiting for response...');
 
-    // Wait for response
-    const accepted = await new Promise<boolean>((resolve) => {
-      this.transferResponseResolve = resolve;
+      // Wait for response
+      const accepted = await new Promise<boolean>((resolve) => {
+        this.transferResponseResolve = resolve;
 
-      // Timeout after 60 seconds
-      setTimeout(() => {
-        if (this.transferResponseResolve) {
-          this.transferResponseResolve(false);
-          this.transferResponseResolve = null;
-        }
-      }, 60000);
-    });
+        // Timeout after 60 seconds
+        setTimeout(() => {
+          if (this.transferResponseResolve) {
+            this.transferResponseResolve(false);
+            this.transferResponseResolve = null;
+          }
+        }, 60000);
+      });
 
-    if (!accepted) {
+      if (!accepted) {
+        this.filesRequested = null;
+        throw new Error('Transfer rejected by peer');
+      }
+
+      logger.debug('Transfer accepted, sending files...');
+      this.trigger('transfer-accepted');
+
+      // Queue files and start sending
+      this.filesQueue = [...this.filesRequested];
       this.filesRequested = null;
-      throw new Error('Transfer rejected by peer');
+      this.dequeueFile();
+    } catch (error) {
+      logger.error('File transfer initiation failed:', error);
+      this.filesRequested = null;
+      this.trigger('error', error);
+      throw error;
     }
-
-    logger.debug('Transfer accepted, sending files...');
-    this.trigger('transfer-accepted');
-
-    // Queue files and start sending
-    this.filesQueue = [...this.filesRequested];
-    this.filesRequested = null;
-    this.dequeueFile();
   }
 
   private dequeueFile(): void {
