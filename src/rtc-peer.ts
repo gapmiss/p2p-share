@@ -58,8 +58,12 @@ class FileChunker {
       this.partitionSize += chunk.byteLength;
       this.onChunk(chunk);
 
-      if (this.isFileEnd()) return;
+      if (this.isFileEnd()) {
+        logger.debug(`File chunking complete: ${this.offset}/${this.data.byteLength} bytes`);
+        return;
+      }
       if (this.partitionSize >= PARTITION_SIZE) {
+        logger.debug(`Partition complete: offset=${this.offset}, size=${this.partitionSize}`);
         this.onPartitionEnd(this.offset);
         return;
       }
@@ -106,7 +110,11 @@ class FileDigester {
     this.progress = (this.totalBytesReceived + this.bytesReceived) / this.totalSize;
     if (isNaN(this.progress)) this.progress = 1;
 
+    logger.debug(`Received chunk for ${this.name}: ${this.bytesReceived}/${this.size} bytes (${(this.getFileProgress() * 100).toFixed(1)}%)`);
+
     if (this.bytesReceived < this.size) return;
+
+    logger.debug(`File receive complete: ${this.name} (${this.bytesReceived} bytes)`);
 
     // File complete - assemble buffer
     const totalLength = this.buffer.reduce((sum, buf) => sum + buf.byteLength, 0);
@@ -365,6 +373,8 @@ export class RTCPeer extends Events {
     this.currentSendFile = file;
     this.sendBytesSent = 0;
 
+    logger.debug(`Sending file: ${file.metadata.name} (${file.data.byteLength} bytes, type: ${file.metadata.type})`);
+
     // Send header for this file
     const header: PairDropFileHeader = {
       type: 'header',
@@ -411,7 +421,15 @@ export class RTCPeer extends Events {
   }
 
   private sendNextPartition(): void {
-    if (!this.chunker || this.chunker.isFileEnd()) return;
+    if (!this.chunker) {
+      logger.warn('sendNextPartition called but no chunker exists');
+      return;
+    }
+    if (this.chunker.isFileEnd()) {
+      logger.debug('File send complete, no more partitions to send');
+      return;
+    }
+    logger.debug('Sending next partition');
     this.chunker.nextPartition();
   }
 
@@ -466,13 +484,22 @@ export class RTCPeer extends Events {
   }
 
   private onFileReceived(data: ArrayBuffer, name: string, mime: string): void {
-    if (!this.requestAccepted) return;
+    logger.debug(`onFileReceived called for ${name} (${data.byteLength} bytes)`);
+
+    if (!this.requestAccepted) {
+      logger.warn('onFileReceived but no requestAccepted');
+      return;
+    }
 
     const acceptedHeader = this.requestAccepted.header.shift();
-    if (!acceptedHeader) return;
+    if (!acceptedHeader) {
+      logger.warn('onFileReceived but no acceptedHeader in queue');
+      return;
+    }
 
     this.totalBytesReceived += data.byteLength;
 
+    logger.debug(`Sending file-transfer-complete for ${name}`);
     // Send file-transfer-complete to sender
     const complete: PairDropFileTransferComplete = { type: 'file-transfer-complete' };
     this.sendJSON(complete);
@@ -620,6 +647,7 @@ export class RTCPeer extends Events {
   }
 
   private handlePartition(partition: PairDropPartition): void {
+    logger.debug(`Received partition at offset ${partition.offset}, sending ack`);
     // Acknowledge partition received
     const ack: PairDropPartitionReceived = {
       type: 'partition-received',
@@ -650,12 +678,15 @@ export class RTCPeer extends Events {
   }
 
   private handleFileTransferComplete(): void {
+    logger.debug('Received file-transfer-complete from receiver');
     // Receiver confirmed file received - move to next file
     this.chunker = null;
     if (this.filesQueue.length === 0) {
+      logger.debug('All files sent, transfer complete');
       this.busy = false;
       this.trigger('transfer-complete', { files: [] });
     } else {
+      logger.debug(`${this.filesQueue.length} files remaining in queue`);
       this.dequeueFile();
     }
   }
