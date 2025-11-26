@@ -164,7 +164,7 @@ npm run build    # Production build
   - Chinese: No plural suffixes
 - To add a new language: Create `src/i18n/locales/[code].ts` and add to `translations` object in `src/i18n/index.ts`
 
-## Common Issues
+## Common Issues & Solutions
 
 ### "Unknown message type ws-config"
 The plugin wasn't handling PairDrop's initial messages. Fixed by adding handlers for `ws-config` and `display-name`.
@@ -172,8 +172,26 @@ The plugin wasn't handling PairDrop's initial messages. Fixed by adding handlers
 ### Peers don't see each other
 Must send `join-ip-room` after receiving `display-name`. Peers are grouped by IP address on the server.
 
-### WebRTC signals not delivered
-Signals must include `roomType` and `roomId` for the server to route them correctly.
+### WebRTC signals not delivered in multi-room scenarios
+**Problem**: When connected to multiple rooms (IP room + paired device rooms), WebRTC signaling was using incorrect room information. The signaling client tracked only the "current" room, which got overwritten each time a new `peers` message arrived.
+
+**Solution** (Fixed in v0.1.3): Track `roomType` and `roomId` for each individual peer in `peer-manager.ts` using the `peerRooms` map. Pass per-peer room info when creating RTCPeer instances and sending signals. This ensures paired device connections use secret room signaling while local network connections use IP room signaling.
+
+**Files**: `src/peer-manager.ts`, `src/rtc-peer.ts`, `src/signaling.ts`
+
+### Discovery mode isolation
+**Problem**: When switching between 'auto' and 'paired-only' discovery modes, the client cleared local peers but didn't leave the IP room on the server side (PairDrop protocol doesn't support leaving individual rooms without disconnecting).
+
+**Solution** (Fixed in v0.1.2): Make `switchDiscoveryMode()` async and reconnect when switching modes. This ensures only the appropriate rooms are joined based on the new discovery mode.
+
+**Files**: `src/signaling.ts`, `src/peer-manager.ts`, `src/settings.ts`
+
+### Paired device badge not showing
+**Problem**: The paired device badge in the peer list used display name matching to determine if a peer is paired. This caused the badge to not appear until the paired device's display name was updated.
+
+**Solution** (Fixed in v0.1.4): Use the `roomSecret` tracking - if a peer has a roomSecret (is in a secret room), it's a paired device. The badge now appears immediately when the peer connects.
+
+**File**: `src/modals/peer-modal.ts`
 
 ### Transfer completes but UI stuck
 Race condition - transfer may complete before modal is created. Fixed by implementing request/accept flow.
@@ -190,6 +208,28 @@ Custom display names required proactive WebRTC connections and added timing issu
 ### Empty files (0 bytes) handling
 Empty files cause issues with PairDrop protocol and WebRTC data channels. Solution: Filter out empty files before transfer in `main.ts` `sendToPeer()` method. Users are notified when empty files are skipped. This prevents stalls and ensures compatibility with PairDrop web/mobile apps.
 
+## Security & Encryption
+
+P2P Share uses WebRTC's built-in encryption for secure peer-to-peer transfers:
+
+### Encryption Layers
+- **Signaling Channel**: WSS (WebSocket Secure) - TLS encrypted connection to PairDrop server
+- **WebRTC Handshake**: DTLS (Datagram TLS) - Automatic key exchange
+- **File Transfer**: SRTP (Secure Real-time Transport Protocol) - AES-128+ encryption
+
+### What the Server Sees
+- **CAN see**: Peer IDs, display names, room membership, connection timing, IP addresses (for STUN)
+- **CANNOT see**: File contents, file names, file sizes, any transfer data
+
+### Key Security Points
+- WebRTC encryption is **mandatory and automatic** in modern implementations
+- Uses industry-standard ciphers (AES-GCM, ChaCha20-Poly1305)
+- Perfect Forward Secrecy (PFS) via ephemeral key exchange
+- Files **never** pass through the signaling server - only direct peer-to-peer
+- More private than HTTPS file uploads (server sees only metadata, not files)
+
+For detailed security information, see **SECURITY.md**.
+
 ## Testing
 
 1. Run two Obsidian vaults on the same machine
@@ -202,6 +242,8 @@ Empty files cause issues with PairDrop protocol and WebRTC data channels. Soluti
 8. Test device pairing across different networks
 9. Test connect/disconnect toggle from status bar menu
 10. Test transfers with mix of empty and non-empty files (empty files should be filtered)
+11. Test multi-room scenarios (paired devices + local network peers simultaneously)
+12. Test discovery mode switching (auto ↔ paired-only)
 
 ## Settings
 

@@ -78,13 +78,11 @@ Manage paired devices in Settings > P2P Share > Paired Devices.
 | Setting | Description |
 |---------|-------------|
 | **Signaling Server URL** | WebSocket URL for peer discovery (default: `wss://pairdrop.net`) |
-| **Save Location** | Folder where received files are saved |
-| **Discovery Mode** | `Auto-discover` (find all peers) or `Paired devices only` |
-| **Device Name** | Custom name for your device (auto-generated if empty) |
-| **Auto-accept from paired** | Automatically accept files from paired devices |
-| **Show Notifications** | Display notifications for transfers |
-| **Log Level** | Console logging verbosity (None, Errors, Warnings, Info, Debug) |
-| **Paired Devices** | View and remove paired devices |
+| **Save Location** | Folder where received files are saved (default: `P2P Share/`) |
+| **Discovery Mode** | `Auto-discover` (local network + paired devices) or `Paired devices only` |
+| **Log Level** | Console logging verbosity (None, Error, Warn, Info, Debug) |
+| **Auto-connect on startup** | Automatically connect to server when Obsidian loads (default: enabled) |
+| **Paired Devices** | View and manage paired devices (each can have auto-accept enabled) |
 
 ## Self-Hosted Server
 
@@ -105,7 +103,18 @@ The signaling server only handles peer discovery - actual file data transfers di
 3. **Transfer**: Files are chunked into 64KB pieces and sent directly peer-to-peer
 4. **Storage**: Received files are saved to your vault using Obsidian's API
 
-Data flows directly between peers - the signaling server only facilitates the initial connection.
+Data flows directly between peers - the signaling server only facilitates the initial connection and never sees your file contents.
+
+## Security
+
+P2P Share uses **WebRTC's built-in encryption** (DTLS + SRTP) for secure peer-to-peer file transfers:
+
+- ✅ **All file data is encrypted** during transfer (same encryption as Zoom/Google Meet)
+- ✅ **Signaling uses WSS (WebSocket Secure)** - encrypted with TLS like HTTPS
+- ✅ **Server never sees your files** - only connection metadata for peer discovery
+- ✅ **No configuration needed** - encryption is automatic
+
+For detailed security information, see **[SECURITY.md](SECURITY.md)**.
 
 ## Compatibility
 
