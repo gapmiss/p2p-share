@@ -148,9 +148,10 @@ export class PeerModal extends Modal {
   private renderPeerItem(peer: PeerInfo): void {
     if (!this.peersContainer) return;
 
-    // Check if this peer is paired
+    // Check if this peer is paired (connected via secret room)
     const peerDisplayName = peer.name.displayName || peer.name.deviceName || 'Unknown';
-    const isPaired = this.pairedDevices.some((d) => d.displayName === peerDisplayName);
+    const roomSecret = this.peerManager.getRoomSecretForPeer(peer.id);
+    const isPaired = roomSecret !== null; // Peer is paired if it has a roomSecret
 
     const item = this.peersContainer.createDiv({
       cls: 'p2p-share-peer-item',
