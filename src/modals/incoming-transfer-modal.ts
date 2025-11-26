@@ -10,6 +10,7 @@ export class IncomingTransferModal extends Modal {
   private onReject: () => void;
   private roomSecret: string | null;
   private currentAutoAccept: boolean;
+  private resolved = false;
 
   constructor(
     app: App,
@@ -56,22 +57,34 @@ export class IncomingTransferModal extends Modal {
     // File list
     const fileList = contentEl.createDiv({ cls: 'p2p-share-incoming-file-list' });
     const maxDisplay = 5;
-    const displayFiles = this.files.slice(0, maxDisplay);
+    let showingAll = false;
 
-    for (const file of displayFiles) {
-      const item = fileList.createDiv({ cls: 'p2p-share-incoming-file-item' });
-      const icon = item.createDiv({ cls: 'p2p-share-file-icon' });
-      setIcon(icon, this.getFileIcon(file.name));
-      item.createDiv({ cls: 'p2p-share-file-name', text: file.name });
-      item.createDiv({ cls: 'p2p-share-file-size', text: this.formatSize(file.size) });
-    }
+    const renderFileList = () => {
+      fileList.empty();
+      const displayFiles = showingAll ? this.files : this.files.slice(0, maxDisplay);
 
-    if (this.files.length > maxDisplay) {
-      fileList.createDiv({
-        cls: 'p2p-share-incoming-more',
-        text: t('incoming-modal.more-files', this.files.length - maxDisplay),
-      });
-    }
+      for (const file of displayFiles) {
+        const item = fileList.createDiv({ cls: 'p2p-share-incoming-file-item' });
+        const icon = item.createDiv({ cls: 'p2p-share-file-icon' });
+        setIcon(icon, this.getFileIcon(file.name));
+        item.createDiv({ cls: 'p2p-share-file-name', text: file.name });
+        item.createDiv({ cls: 'p2p-share-file-size', text: this.formatSize(file.size) });
+      }
+
+      if (!showingAll && this.files.length > maxDisplay) {
+        const moreButton = fileList.createDiv({
+          cls: 'p2p-share-incoming-more',
+          text: t('incoming-modal.more-files', this.files.length - maxDisplay),
+        });
+        moreButton.style.cursor = 'pointer';
+        moreButton.onclick = () => {
+          showingAll = true;
+          renderFileList();
+        };
+      }
+    };
+
+    renderFileList();
 
     // Auto-accept checkbox (only show if this is a paired device)
     let autoAcceptCheckbox: HTMLInputElement | null = null;
@@ -88,12 +101,14 @@ export class IncomingTransferModal extends Modal {
 
     const rejectBtn = footer.createEl('button', { text: t('incoming-modal.decline'), cls: 'p2p-share-btn-reject' });
     rejectBtn.onclick = () => {
+      this.resolved = true;
       this.onReject();
       this.close();
     };
 
     const acceptBtn = footer.createEl('button', { text: t('incoming-modal.accept'), cls: 'mod-cta' });
     acceptBtn.onclick = () => {
+      this.resolved = true;
       const enableAutoAccept = autoAcceptCheckbox?.checked ?? false;
       this.onAccept(enableAutoAccept);
       this.close();
@@ -148,6 +163,12 @@ export class IncomingTransferModal extends Modal {
 
   onClose(): void {
     const { contentEl } = this;
+
+    // If modal closed without explicit accept/decline, treat as rejection
+    if (!this.resolved) {
+      this.onReject();
+    }
+
     contentEl.empty();
   }
 }

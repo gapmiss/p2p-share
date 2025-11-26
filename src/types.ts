@@ -26,6 +26,8 @@ export interface P2PShareSettings {
   logLevel: LogLevel;
   /** Whether to automatically connect on plugin load */
   autoConnect: boolean;
+  /** Whether to show system notifications for incoming transfers */
+  useSystemNotifications: boolean;
 }
 
 export const DEFAULT_SETTINGS: P2PShareSettings = {
@@ -35,6 +37,7 @@ export const DEFAULT_SETTINGS: P2PShareSettings = {
   pairedDevices: [],
   logLevel: 'error',
   autoConnect: true,
+  useSystemNotifications: false,
 };
 
 export interface PeerInfo {

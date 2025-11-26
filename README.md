@@ -12,7 +12,8 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 - **Auto-Discovery**: Automatically discover peers on the same network
 - **Progress Tracking**: Real-time transfer progress with detailed status
 - **Multilingual**: Available in English, French, Russian, and Simplified Chinese
-- **Configurable**: Custom signaling server, save locations, device names, and log levels
+- **System Notifications**: Optional OS-level notifications for incoming transfers (desktop only)
+- **Configurable**: Custom signaling server, save locations, and log levels
 
 ## Installation
 
@@ -80,8 +81,9 @@ Manage paired devices in Settings > P2P Share > Paired Devices.
 | **Signaling Server URL** | WebSocket URL for peer discovery (default: `wss://pairdrop.net`) |
 | **Save Location** | Folder where received files are saved (default: `P2P Share/`) |
 | **Discovery Mode** | `Auto-discover` (local network + paired devices) or `Paired devices only` |
-| **Log Level** | Console logging verbosity (None, Error, Warn, Info, Debug) |
+| **Log Level** | Console logging verbosity (Silent, Error, Warning, Info, Debug) |
 | **Auto-connect on startup** | Automatically connect to server when Obsidian loads (default: enabled) |
+| **System Notifications** | Show OS-level notifications for incoming transfers (desktop only, default: disabled) |
 | **Paired Devices** | View and manage paired devices (each can have auto-accept enabled) |
 
 ## Self-Hosted Server

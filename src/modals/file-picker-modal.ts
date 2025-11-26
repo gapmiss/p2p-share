@@ -109,8 +109,11 @@ export class FilePickerModal extends Modal {
 
     const item = this.contentContainer.createDiv({ cls: 'p2p-share-file-item' });
 
+    // Create label wrapper for checkbox and content
+    const label = item.createEl('label', { cls: 'p2p-share-file-label' });
+
     // Checkbox
-    const checkbox = item.createEl('input', { type: 'checkbox' });
+    const checkbox = label.createEl('input', { type: 'checkbox' });
     checkbox.checked =
       file instanceof TFile ? this.selectedFiles.has(file) : this.selectedFolders.has(file as TFolder);
 
@@ -132,18 +135,19 @@ export class FilePickerModal extends Modal {
     };
 
     // Icon
-    const iconContainer = item.createDiv({ cls: 'p2p-share-file-icon' });
+    const iconContainer = label.createDiv({ cls: 'p2p-share-file-icon' });
     if (file instanceof TFolder) {
       setIcon(iconContainer, 'folder');
     } else {
       setIcon(iconContainer, this.getFileIcon((file as TFile).extension));
     }
 
-    // Name (clickable for folders)
-    const nameEl = item.createDiv({ cls: 'p2p-share-file-name', text: file.name });
+    // Name (clickable for folders to navigate)
+    const nameEl = label.createDiv({ cls: 'p2p-share-file-name', text: file.name });
     if (file instanceof TFolder) {
       nameEl.addClass('p2p-share-folder-name');
       nameEl.onclick = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         this.currentPath = `/${file.path}`;
         this.renderFileList();
@@ -152,7 +156,7 @@ export class FilePickerModal extends Modal {
       };
     }
 
-    // Size (for files)
+    // Size (for files) - outside of label so it doesn't trigger checkbox
     if (file instanceof TFile) {
       const size = this.formatSize(file.stat.size);
       item.createDiv({ cls: 'p2p-share-file-size', text: size });

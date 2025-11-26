@@ -259,8 +259,17 @@
   border-bottom: none;
 }
 
+.p2p-share-file-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  cursor: default;
+}
+
 .p2p-share-file-item input[type="checkbox"] {
   margin: 0;
+  cursor: default;
 }
 
 .p2p-share-file-icon {
@@ -452,8 +461,15 @@
 .p2p-share-incoming-more {
   padding: 0.5rem;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--text-accent);
   font-size: 0.85rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 4px;
+}
+
+.p2p-share-incoming-more:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-accent-hover);
 }
 
 .p2p-share-incoming-actions {

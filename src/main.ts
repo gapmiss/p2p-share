@@ -1,4 +1,4 @@
-import { Menu, Notice, Plugin, TFile, TFolder, addIcon, setIcon } from 'obsidian';
+import { Menu, Notice, Platform, Plugin, TFile, TFolder, addIcon, setIcon } from 'obsidian';
 import { P2PShareSettingTab } from './settings';
 import { PeerManager } from './peer-manager';
 import { PeerModal, FilePickerModal, TransferModal, IncomingTransferModal, PairingModal } from './modals';
@@ -429,6 +429,12 @@ export default class P2PSharePlugin extends Plugin {
       return d.displayName === peerName;
     });
 
+    // Show system notification if enabled (and not auto-accepting)
+    if (this.settings.useSystemNotifications && !pairedDevice?.autoAccept) {
+      const totalSizeFormatted = this.formatSize(data.totalSize);
+      this.showSystemNotification(peerName, data.files.length, totalSizeFormatted);
+    }
+
     // Option C: If auto-accept is enabled, skip the accept modal and go straight to progress
     if (pairedDevice?.autoAccept) {
       logger.info('Auto-accepting transfer from paired device:', peerName);
@@ -480,13 +486,73 @@ export default class P2PSharePlugin extends Plugin {
         this.activeTransferModal.open();
       },
       () => {
-        // Reject
+        // Reject (notice shown by 'transfer-rejected' event handler)
         this.peerManager?.rejectTransfer(data.peerId);
-        new Notice(t('notice.transfer-declined'));
       },
       pairedDevice?.roomSecret || null,
       pairedDevice?.autoAccept || false
     ).open();
+  }
+
+  /**
+   * Shows a system-level notification for incoming transfers.
+   * This handles permission requests and creates notifications that persist outside Obsidian.
+   */
+  private async showSystemNotification(peerName: string, fileCount: number, totalSize: string): Promise<void> {
+    try {
+      // Check if we're on mobile platform first
+      if (Platform.isMobile) {
+        logger.debug('System notifications not supported on mobile platform');
+        return;
+      }
+
+      // Check if the browser supports the Notification API
+      if (!('Notification' in window)) {
+        logger.warn('Browser does not support system notifications');
+        return;
+      }
+
+      // Request permission if we haven't asked before
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          logger.info('User denied system notification permission');
+          return;
+        }
+      }
+
+      // Don't show notification if user has denied permission
+      if (Notification.permission !== 'granted') {
+        logger.debug('System notifications not permitted');
+        return;
+      }
+
+      // Create the system notification
+      const body = tp('incoming-modal.files-summary', fileCount, totalSize);
+      const notification = new Notification(t('incoming-modal.title'), {
+        body: `${t('incoming-modal.from')}${peerName}\n${body}`,
+        tag: `p2p-transfer-${Date.now()}`,
+        requireInteraction: true,
+        icon: 'data:image/svg+xml;base64,' + btoa(P2P_SHARE_ICON),
+      });
+
+      // Handle clicks on the system notification
+      notification.onclick = () => {
+        // Bring Obsidian window to focus
+        window.focus();
+        // Close the system notification
+        notification.close();
+      };
+    } catch (error) {
+      logger.error('Failed to show system notification:', error);
+    }
+  }
+
+  private formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
 
   private getFilesInFolder(folder: TFolder): TFile[] {

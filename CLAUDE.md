@@ -208,6 +208,20 @@ Custom display names required proactive WebRTC connections and added timing issu
 ### Empty files (0 bytes) handling
 Empty files cause issues with PairDrop protocol and WebRTC data channels. Solution: Filter out empty files before transfer in `main.ts` `sendToPeer()` method. Users are notified when empty files are skipped. This prevents stalls and ensures compatibility with PairDrop web/mobile apps.
 
+### Incoming transfer modal dismiss handling
+**Problem**: When users closed the incoming transfer modal by clicking the X button, pressing ESC, or clicking outside the modal, the transfer remained in limbo without being explicitly rejected.
+
+**Solution** (Fixed in v0.1.9): Added a `resolved` flag to track whether the user explicitly accepted or declined. In the `onClose()` method, if `resolved` is still `false`, automatically call `onReject()` to properly reject the transfer. This ensures transfers are always handled regardless of how the modal is dismissed.
+
+**File**: `src/modals/incoming-transfer-modal.ts`
+
+### Duplicate transfer rejection notices
+**Problem**: When a transfer was rejected, two notices appeared: "Transfer rejected" and "Transfer declined".
+
+**Solution** (Fixed in v0.1.9): Removed the duplicate notice in the rejection callback. The `rejectTransfer()` method triggers a 'transfer-rejected' event that shows its own notice, making the manual notice redundant.
+
+**File**: `src/main.ts`
+
 ## Security & Encryption
 
 P2P Share uses WebRTC's built-in encryption for secure peer-to-peer transfers:
@@ -244,12 +258,22 @@ For detailed security information, see **SECURITY.md**.
 10. Test transfers with mix of empty and non-empty files (empty files should be filtered)
 11. Test multi-room scenarios (paired devices + local network peers simultaneously)
 12. Test discovery mode switching (auto ↔ paired-only)
+13. Test incoming transfer modal dismiss (X button, ESC key, click outside)
+14. Test system notifications (desktop only) - enable in settings
+15. Test "...and X more" expansion in incoming transfer modal
+16. Test clickable file labels in file picker (click name to toggle checkbox)
 
 ## Settings
 
 ### Behavior Settings
-- **Log level**: Configure console logging verbosity (none, error, warn, info, debug)
+- **Log level**: Configure console logging verbosity with descriptive labels:
+  - Silent (No logging)
+  - Error (Critical only)
+  - Warning (+ Errors)
+  - Info (+ Status messages)
+  - Debug (Maximum verbosity)
 - **Auto-connect on startup**: Toggle automatic connection to server when Obsidian loads (default: enabled)
+- **System notifications**: Show OS-level notifications for incoming transfers (desktop only, default: disabled)
 
 ### Discovery Settings
 - **Discovery mode**: Choose between auto-discover (local network + paired devices) or paired devices only
@@ -263,6 +287,26 @@ For detailed security information, see **SECURITY.md**.
 - Auto-accept transfers option per paired device
 - Device management (view, unpair) in settings
 
+## UI/UX Enhancements
+
+### Incoming Transfer Modal
+- **Clickable "...and X more" expansion**: Shows first 5 files by default, click to expand and view all files
+- **Proper dismiss handling**: Closing modal (X button, ESC, click outside) properly rejects transfer
+- **Visual feedback**: Accent color and hover effects on expandable elements
+
+### File Picker Modal
+- **Clickable file labels**: Click on file/folder name or icon to toggle checkbox selection
+- **Improved accessibility**: Larger click target area for better UX
+
+### Log Level Settings
+- **Descriptive labels**: Clear indication of what each log level includes (e.g., "Warning (+ Errors)")
+- **User-friendly**: Easier to understand logging verbosity options
+
+### System Notifications
+- **OS-level alerts**: Optional desktop notifications for incoming transfers
+- **Persistent notifications**: Stay visible until user interacts (requireInteraction: true)
+- **Smart timing**: Only shown for non-auto-accepted transfers
+
 ## Future Improvements
 
 - [x] Paired device management (persistent pairing)
@@ -271,6 +315,9 @@ For detailed security information, see **SECURITY.md**.
 - [x] Connection toggle UI
 - [x] Internationalization (English, French, Russian, Simplified Chinese)
 - [x] Auto-connect setting for manual connection control
+- [x] System notifications for incoming transfers
+- [x] Improved modal UX (expandable file lists, clickable labels)
+- [x] Enhanced log level descriptions
 - [ ] Additional languages (Spanish, German, Japanese, etc.)
 - [ ] TURN server support for restrictive networks
 - [ ] Transfer queue for multiple files

@@ -124,6 +124,18 @@ export class P2PShareSettingTab extends PluginSettingTab {
           })
       );
 
+    new Setting(containerEl)
+      .setName(t('settings.behavior.system-notifications.name'))
+      .setDesc(t('settings.behavior.system-notifications.desc'))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.useSystemNotifications)
+          .onChange(async (value) => {
+            this.plugin.settings.useSystemNotifications = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // Connection Status
     containerEl.createEl('h3', { text: t('settings.connection.title') });
 
