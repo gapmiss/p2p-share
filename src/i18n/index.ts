@@ -5,6 +5,8 @@ import { ru } from './locales/ru';
 import { zhCN } from './locales/zh-CN';
 import { es } from './locales/es';
 import { de } from './locales/de';
+import { ja } from './locales/ja';
+import { ko } from './locales/ko';
 
 export type TranslationKey = keyof typeof en;
 
@@ -14,6 +16,8 @@ const translations = {
 	de,
 	fr,
 	ru,
+	ja,
+	ko,
 	'zh-CN': zhCN,
 } as const;
 
@@ -24,12 +28,14 @@ type SupportedLocale = keyof typeof translations;
  */
 function getCurrentLocale(): SupportedLocale {
 	const locale = moment.locale();
-	// moment.locale() returns the current locale (e.g., 'en', 'es', 'de', 'fr', 'ru', 'zh')
+	// moment.locale() returns the current locale (e.g., 'en', 'es', 'de', 'fr', 'ru', 'ja', 'ko', 'zh')
 	// If locale is not supported, fall back to 'en'
 	if (locale.startsWith('es')) return 'es';
 	if (locale.startsWith('de')) return 'de';
 	if (locale.startsWith('fr')) return 'fr';
 	if (locale.startsWith('ru')) return 'ru';
+	if (locale.startsWith('ja')) return 'ja';
+	if (locale.startsWith('ko')) return 'ko';
 	if (locale.startsWith('zh')) return 'zh-CN';
 	return 'en';
 }
@@ -78,6 +84,12 @@ export function tp(key: TranslationKey, count: number, ...args: (string | number
 		// Simplified Russian pluralization: 1 vs 2+
 		// Full rules would be: 1, 2-4, 5+ but using simplified version
 		pluralSuffix = count !== 1 ? 'а' : '';
+	} else if (locale === 'ja') {
+		// Japanese doesn't use plural suffixes
+		pluralSuffix = '';
+	} else if (locale === 'ko') {
+		// Korean doesn't use plural suffixes
+		pluralSuffix = '';
 	} else if (locale === 'zh-CN') {
 		// Chinese doesn't use plural suffixes
 		pluralSuffix = '';
