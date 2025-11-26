@@ -244,6 +244,12 @@ export class RTCPeer extends Events {
     };
 
     channel.onerror = (error) => {
+      // Ignore expected errors from user-initiated connection closures
+      const rtcError = error as RTCErrorEvent;
+      if (rtcError.error?.message?.includes('User-Initiated Abort')) {
+        logger.debug('Data channel closed by user');
+        return;
+      }
       logger.error('Data channel error', error);
       this.trigger('error', error);
     };
