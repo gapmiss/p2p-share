@@ -8,6 +8,7 @@ import { t } from './i18n';
 
 export class P2PShareSettingTab extends PluginSettingTab {
   plugin: P2PSharePlugin;
+  private eventRefs: Array<() => void> = [];
 
   constructor(app: App, plugin: P2PSharePlugin) {
     super(app, plugin);
@@ -17,6 +18,21 @@ export class P2PShareSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
+
+    // Clean up previous event listeners
+    this.eventRefs.forEach(off => off());
+    this.eventRefs = [];
+
+    // Listen for paired device changes and refresh the display
+    const pairedDevicesChangedHandler = () => {
+      this.display();
+    };
+    this.eventRefs.push(
+      this.plugin.peerManager?.on('secret-room-deleted', pairedDevicesChangedHandler) ?? (() => {})
+    );
+    this.eventRefs.push(
+      this.plugin.peerManager?.on('paired-device-identified', pairedDevicesChangedHandler) ?? (() => {})
+    );
 
     containerEl.createEl('h2', { text: t('settings.title') });
 
@@ -241,5 +257,11 @@ export class P2PShareSettingTab extends PluginSettingTab {
     } else {
       return date.toLocaleDateString();
     }
+  }
+
+  hide(): void {
+    // Clean up event listeners when settings tab is closed
+    this.eventRefs.forEach(off => off());
+    this.eventRefs = [];
   }
 }
