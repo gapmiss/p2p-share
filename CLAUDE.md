@@ -155,10 +155,12 @@ npm run build    # Production build
 - Use `t()` function from `src/i18n` for translating strings
 - Use `tp()` function for pluralized strings (e.g., "1 file" vs "2 files")
 - Translation keys defined in `src/i18n/locales/en.ts` (source of truth)
-- Current supported languages: English (en), French (fr), Russian (ru), Simplified Chinese (zh-CN)
+- Current supported languages: English (en), Spanish (es), German (de), French (fr), Russian (ru), Simplified Chinese (zh-CN)
 - Language auto-detected from Obsidian's language setting via `moment.locale()`
 - Pluralization rules vary by language (simplified implementation):
   - English: 1 vs 2+ (suffix 's')
+  - Spanish: 1 vs 2+ (suffix 's')
+  - German: 1 vs 2+ (suffix 'e')
   - French: 0-1 vs 2+ (suffix 's')
   - Russian: 1 vs 2+ (suffix 'а', simplified from full 3-form rules)
   - Chinese: No plural suffixes
@@ -313,7 +315,7 @@ For detailed security information, see **SECURITY.md**.
 - [x] PairDrop protocol compatibility
 - [x] Configurable logging
 - [x] Connection toggle UI
-- [x] Internationalization (English, French, Russian, Simplified Chinese)
+- [x] Internationalization (English, Spanish, German, French, Russian, Simplified Chinese)
 - [x] Auto-connect setting for manual connection control
 - [x] System notifications for incoming transfers
 - [x] Improved modal UX (expandable file lists, clickable labels)

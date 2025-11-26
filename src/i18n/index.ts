@@ -3,11 +3,15 @@ import { en } from './locales/en';
 import { fr } from './locales/fr';
 import { ru } from './locales/ru';
 import { zhCN } from './locales/zh-CN';
+import { es } from './locales/es';
+import { de } from './locales/de';
 
 export type TranslationKey = keyof typeof en;
 
 const translations = {
 	en,
+	es,
+	de,
 	fr,
 	ru,
 	'zh-CN': zhCN,
@@ -20,8 +24,10 @@ type SupportedLocale = keyof typeof translations;
  */
 function getCurrentLocale(): SupportedLocale {
 	const locale = moment.locale();
-	// moment.locale() returns the current locale (e.g., 'en', 'fr', 'ru', 'zh')
+	// moment.locale() returns the current locale (e.g., 'en', 'es', 'de', 'fr', 'ru', 'zh')
 	// If locale is not supported, fall back to 'en'
+	if (locale.startsWith('es')) return 'es';
+	if (locale.startsWith('de')) return 'de';
 	if (locale.startsWith('fr')) return 'fr';
 	if (locale.startsWith('ru')) return 'ru';
 	if (locale.startsWith('zh')) return 'zh-CN';
@@ -60,6 +66,12 @@ export function tp(key: TranslationKey, count: number, ...args: (string | number
 	let pluralSuffix = '';
 	if (locale === 'en') {
 		pluralSuffix = count !== 1 ? 's' : '';
+	} else if (locale === 'es') {
+		// Spanish: 1 vs 2+ (add 's')
+		pluralSuffix = count !== 1 ? 's' : '';
+	} else if (locale === 'de') {
+		// German: 1 vs 2+ (most plurals add 'e' or 'en', but we use 'e' for simplicity)
+		pluralSuffix = count !== 1 ? 'e' : '';
 	} else if (locale === 'fr') {
 		pluralSuffix = count > 1 ? 's' : '';
 	} else if (locale === 'ru') {

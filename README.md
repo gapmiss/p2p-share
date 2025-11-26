@@ -11,7 +11,7 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 - **Cross-Platform**: Works on desktop (Windows, macOS, Linux) and mobile
 - **Auto-Discovery**: Automatically discover peers on the same network
 - **Progress Tracking**: Real-time transfer progress with detailed status
-- **Multilingual**: Available in English, French, Russian, and Simplified Chinese
+- **Multilingual**: Available in English, Spanish, German, French, Russian, and Simplified Chinese
 - **System Notifications**: Optional OS-level notifications for incoming transfers (desktop only)
 - **Configurable**: Custom signaling server, save locations, and log levels
 
