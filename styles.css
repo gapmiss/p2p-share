@@ -612,3 +612,102 @@
 .p2p-share-pairing-icon.p2p-share-error svg {
   color: var(--color-red);
 }
+
+/* Settings - Paired Devices */
+.p2p-share-paired-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background-color: var(--background-secondary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.p2p-share-paired-item:hover {
+  border-color: var(--background-modifier-border-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.p2p-share-paired-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-right: 2.5rem;
+}
+
+.p2p-share-paired-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.p2p-share-paired-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.p2p-share-paired-date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.p2p-share-paired-controls {
+  display: flex;
+  align-items: center;
+}
+
+.p2p-share-paired-controls .setting-item {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.p2p-share-paired-controls .setting-item-info {
+  flex-grow: 1;
+}
+
+.p2p-share-paired-controls .setting-item-name {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.p2p-share-paired-controls .setting-item-description {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.p2p-share-paired-remove {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.p2p-share-paired-remove:hover {
+  background-color: var(--background-modifier-error);
+  color: var(--text-on-accent);
+}
+
+.p2p-share-paired-remove svg {
+  width: 18px;
+  height: 18px;
+}

@@ -264,14 +264,12 @@ export class P2PShareSettingTab extends PluginSettingTab {
     const item = container.createDiv({ cls: 'p2p-share-paired-item' });
 
     const info = item.createDiv({ cls: 'p2p-share-paired-info' });
-    const iconEl = info.createDiv({ cls: 'p2p-share-paired-icon' });
-    setIcon(iconEl, 'smartphone');
 
     const details = info.createDiv({ cls: 'p2p-share-paired-details' });
     details.createDiv({ cls: 'p2p-share-paired-name', text: device.displayName });
     details.createDiv({
       cls: 'p2p-share-paired-date',
-      text: t('settings.paired-devices.paired-at', this.formatDate(device.pairedAt)),
+      text: t('settings.paired-devices.paired-at', new Date(device.pairedAt).toLocaleString()),
     });
 
     const controls = item.createDiv({ cls: 'p2p-share-paired-controls' });
