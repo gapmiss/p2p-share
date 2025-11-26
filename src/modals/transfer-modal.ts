@@ -80,7 +80,7 @@ export class TransferModal extends Modal {
   }
 
   private renderFileProgress(file: FileMetadata): void {
-    if (!this.progressContainer) return;
+    if (this.progressContainer === null) return;
 
     const item = this.progressContainer.createDiv({
       cls: 'p2p-share-file-progress-item',

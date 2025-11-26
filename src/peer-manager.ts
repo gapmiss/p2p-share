@@ -347,7 +347,7 @@ export class PeerManager extends Events {
   }
 
   private async ensureFolderExists(folderPath: string): Promise<void> {
-    if (!folderPath || this.vault.getAbstractFileByPath(folderPath)) {
+    if (folderPath === '' || this.vault.getAbstractFileByPath(folderPath) !== null) {
       return;
     }
 

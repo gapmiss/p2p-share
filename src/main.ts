@@ -143,7 +143,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   private setupPeerManagerHandlers(): void {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     this.peerManager.on('server-connected', () => {
       this.updateStatusBar();
@@ -264,7 +264,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   async reconnect(): Promise<void> {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
     try {
       await this.peerManager.reconnect();
     } catch (error) {
@@ -274,7 +274,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   private updateStatusBar(): void {
-    if (!this.statusBarItem) return;
+    if (this.statusBarItem === null) return;
 
     const isConnected = this.peerManager?.isConnected() ?? false;
     const peerCount = this.peerManager?.getPeers().length ?? 0;
@@ -302,7 +302,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   private showPeerModal(): void {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     new PeerModal(
       this.app,
@@ -326,7 +326,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   private shareFiles(files: TFile[], folders: TFolder[] = []): void {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     new PeerModal(
       this.app,
@@ -340,7 +340,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   private shareFolder(folder: TFolder): void {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     new PeerModal(
       this.app,
@@ -354,7 +354,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   private async sendToPeer(peerId: string, files: TFile[], folders: TFolder[]): Promise<void> {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     const peerInfo = this.peerManager.getPeerInfo(peerId);
     const peerName = peerInfo?.name.displayName || peerInfo?.name.deviceName || 'Unknown peer';
@@ -417,7 +417,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   private handleIncomingTransfer(data: { files: FileMetadata[]; totalSize: number; peerId: string }): void {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     const peerInfo = this.peerManager.getPeerInfo(data.peerId);
     const peerName = peerInfo?.name.displayName || peerInfo?.name.deviceName || 'Unknown peer';
@@ -587,7 +587,7 @@ export default class P2PSharePlugin extends Plugin {
   // ============================================================================
 
   private showPairingModal(): void {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     if (!this.peerManager.isConnected()) {
       new Notice(t('notice.not-connected'));
@@ -671,7 +671,7 @@ export default class P2PSharePlugin extends Plugin {
   }
 
   async toggleConnection(): Promise<void> {
-    if (!this.peerManager) return;
+    if (this.peerManager === null) return;
 
     if (this.peerManager.isConnected()) {
       this.peerManager.disconnect();
