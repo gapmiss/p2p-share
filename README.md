@@ -34,12 +34,13 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 ### From Source
 
 ```bash
-cd obsidian-p2p-share
+git clone https://github.com/gapmiss/p2p-share.git
+cd p2p-share
 npm install
 npm run build
 ```
 
-Then copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugins folder.
+Then copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugins folder (e.g. `.obsidian/plugins/p2p-share`).
 
 ## Usage
 
