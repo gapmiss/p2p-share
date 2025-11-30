@@ -41,6 +41,7 @@ export const ko = {
 	'notice.failed-to-connect': 'P2P Share: 서버 연결에 실패했습니다. URL을 확인하고 서버가 외부 연결을 허용하는지 확인하세요.',
 	'notice.transfer-rejected': 'P2P Share: 전송이 거부됨',
 	'notice.transfer-cancelled': 'P2P Share: 전송이 취소됨',
+	'notice.transfer-cancelled-by-sender': 'P2P Share: 발신자가 전송을 취소했습니다',
 	'notice.no-files': 'P2P Share: 전송할 파일이 없습니다',
 	'notice.error-sending': 'P2P Share: 파일 전송 오류 - {0}',
 	'notice.device-paired': 'P2P Share: 기기가 성공적으로 페어링되었습니다!',

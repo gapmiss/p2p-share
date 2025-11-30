@@ -419,6 +419,11 @@
   color: var(--color-green);
 }
 
+.p2p-share-file-progress-status.renamed {
+  color: var(--color-orange);
+  font-style: italic;
+}
+
 /* Incoming Transfer Modal */
 .p2p-share-incoming-modal {
   min-width: 350px;

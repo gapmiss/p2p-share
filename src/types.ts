@@ -174,6 +174,13 @@ export interface PairDropFileTransferComplete {
 }
 
 /**
+ * Sent by sender when they cancel the transfer.
+ */
+export interface PairDropTransferCanceled {
+  type: 'transfer-canceled';
+}
+
+/**
  * Text message (for future text sharing feature).
  */
 export interface PairDropTextMessage {

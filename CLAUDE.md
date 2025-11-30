@@ -119,6 +119,9 @@ Over the WebRTC data channel, using PairDrop's protocol for compatibility with w
 // File complete
 { type: 'file-transfer-complete' }
 
+// Transfer cancelled by sender
+{ type: 'transfer-canceled' }
+
 // Display name change
 { type: 'display-name-changed', displayName }
 ```
@@ -225,6 +228,29 @@ Empty files cause issues with PairDrop protocol and WebRTC data channels. Soluti
 **Solution** (Fixed in v0.1.9): Removed the duplicate notice in the rejection callback. The `rejectTransfer()` method triggers a 'transfer-rejected' event that shows its own notice, making the manual notice redundant.
 
 **File**: `src/main.ts`
+
+### File already exists error on duplicate files
+**Problem**: When receiving files with names that already exist in the vault, a race condition could occur where multiple files tried to create the same filename simultaneously, causing "File already exists" errors.
+
+**Solution**: Implemented proper race condition handling in `saveReceivedFile()` method. The solution wraps `vault.createBinary()` in a try-catch block and retries with incremented filenames (e.g., "file 1.md", "file 2.md") if the creation fails due to race conditions. This matches Obsidian's native duplicate file naming convention. Additionally, when a file is renamed, a `file-renamed` event is emitted and the transfer modal displays "Saved as: [new name]" in orange italic text to inform the user.
+
+**Files**: `src/peer-manager.ts`, `src/main.ts`, `src/modals/transfer-modal.ts`, `styles.css`
+
+### Sender cancellation not notifying receiver
+**Problem**: When the sender cancelled a transfer (by clicking Cancel, X button, ESC, or clicking outside the modal), the receiver was not notified. This left the receiver's modal open in a stuck state, and if they accepted the transfer, it would hang indefinitely.
+
+**Solution**: Implemented a complete sender-to-receiver cancellation flow:
+1. Added `PairDropTransferCanceled` message type to the protocol
+2. Added `cancelTransfer()` method to RTCPeer that sends the cancel message and clears transfer state
+3. Added `handleTransferCanceled()` handler on receiver side to clean up state and emit event
+4. Wired up cancel callbacks in TransferModal to call `cancelTransfer()` when modal is closed (via any method)
+5. Added `transfer-canceled` event handler in main.ts to close both incoming and progress modals
+6. Added `isCancelled` flag to prevent duplicate cancel notifications
+7. Translated "Transfer cancelled by sender" message to all 8 supported languages
+
+When sender cancels at any point, the receiver's modal automatically closes and they see a notice explaining the sender cancelled the transfer.
+
+**Files**: `src/types.ts`, `src/rtc-peer.ts`, `src/peer-manager.ts`, `src/main.ts`, `src/modals/transfer-modal.ts`, `src/i18n/locales/*.ts`
 
 ## Security & Encryption
 

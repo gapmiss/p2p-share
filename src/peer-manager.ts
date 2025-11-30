@@ -196,6 +196,10 @@ export class PeerManager extends Events {
       this.trigger('transfer-rejected', peer.getPeerId());
     });
 
+    peer.on('transfer-canceled', () => {
+      this.trigger('transfer-canceled', peer.getPeerId());
+    });
+
     peer.on('display-name-changed', (newDisplayName: string) => {
       this.handlePeerNameChanged(peer.getPeerId(), newDisplayName);
     });
@@ -331,19 +335,47 @@ export class PeerManager extends Events {
     const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
     await this.ensureFolderExists(folderPath);
 
-    // Generate unique filename if file already exists
-    let counter = 1;
+    // Try to save with a unique filename, retrying if race condition occurs
+    let counter = 0;
     let finalPath = filePath;
-    while (this.vault.getAbstractFileByPath(finalPath)) {
-      const ext = filePath.includes('.') ? filePath.slice(filePath.lastIndexOf('.')) : '';
-      const base = filePath.includes('.') ? filePath.slice(0, filePath.lastIndexOf('.')) : filePath;
-      finalPath = `${base} (${counter})${ext}`;
-      counter++;
+    const maxRetries = 100; // Prevent infinite loop
+
+    while (counter < maxRetries) {
+      try {
+        // Check if file exists
+        if (!this.vault.getAbstractFileByPath(finalPath)) {
+          // File doesn't exist, try to create it
+          const file = await this.vault.createBinary(finalPath, data);
+
+          // Emit event if file was renamed
+          if (finalPath !== filePath) {
+            const savedName = finalPath.substring(finalPath.lastIndexOf('/') + 1);
+            this.trigger('file-renamed', { originalName: metadata.name, savedName });
+          }
+
+          return file;
+        }
+
+        // File exists, generate next candidate name
+        counter++;
+        const ext = filePath.includes('.') ? filePath.slice(filePath.lastIndexOf('.')) : '';
+        const base = filePath.includes('.') ? filePath.slice(0, filePath.lastIndexOf('.')) : filePath;
+        finalPath = `${base} ${counter}${ext}`;
+      } catch (error) {
+        // Race condition: file was created between check and createBinary
+        if (error instanceof Error && error.message.includes('File already exists')) {
+          counter++;
+          const ext = filePath.includes('.') ? filePath.slice(filePath.lastIndexOf('.')) : '';
+          const base = filePath.includes('.') ? filePath.slice(0, filePath.lastIndexOf('.')) : filePath;
+          finalPath = `${base} ${counter}${ext}`;
+          continue;
+        }
+        // Other error, rethrow
+        throw error;
+      }
     }
 
-    // Save file
-    const file = await this.vault.createBinary(finalPath, data);
-    return file;
+    throw new Error(`Failed to save file after ${maxRetries} attempts: ${metadata.name}`);
   }
 
   private async ensureFolderExists(folderPath: string): Promise<void> {
@@ -377,6 +409,11 @@ export class PeerManager extends Events {
   rejectTransfer(peerId: string): void {
     const connection = this.connections.get(peerId);
     connection?.rejectTransfer();
+  }
+
+  cancelTransfer(peerId: string): void {
+    const connection = this.connections.get(peerId);
+    connection?.cancelTransfer();
   }
 
   private getMimeType(extension: string): string {

@@ -41,6 +41,7 @@ export const es = {
 	'notice.failed-to-connect': 'P2P Share: Error al conectar con el servidor. Verifica la URL y asegúrate de que el servidor acepte conexiones externas.',
 	'notice.transfer-rejected': 'P2P Share: Transferencia rechazada',
 	'notice.transfer-cancelled': 'P2P Share: Transferencia cancelada',
+	'notice.transfer-cancelled-by-sender': 'P2P Share: Transferencia cancelada por el remitente',
 	'notice.no-files': 'P2P Share: No hay archivos para enviar',
 	'notice.error-sending': 'P2P Share: Error al enviar archivos - {0}',
 	'notice.device-paired': 'P2P Share: ¡Dispositivo emparejado correctamente!',

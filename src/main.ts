@@ -26,6 +26,7 @@ export default class P2PSharePlugin extends Plugin {
   peerManager: PeerManager | null = null;
   private statusBarItem: HTMLElement | null = null;
   private activeTransferModal: TransferModal | null = null;
+  private activeIncomingTransferModal: IncomingTransferModal | null = null;
   private activePairingModal: PairingModal | null = null;
 
   async onload(): Promise<void> {
@@ -243,6 +244,30 @@ export default class P2PSharePlugin extends Plugin {
       this.activeTransferModal?.updatePeerName?.(data.displayName);
       this.activePairingModal?.updatePeerDisplayName?.(data.displayName);
     });
+
+    this.peerManager.on('file-renamed', (data: { originalName: string; savedName: string }) => {
+      logger.debug('File renamed on save', data);
+      // Update the transfer modal to show the renamed file
+      this.activeTransferModal?.markFileRenamed(data.originalName, data.savedName);
+    });
+
+    this.peerManager.on('transfer-canceled', () => {
+      logger.debug('Transfer canceled by sender');
+
+      // Close the incoming transfer modal (accept/decline) if it's open
+      if (this.activeIncomingTransferModal) {
+        this.activeIncomingTransferModal.close();
+        this.activeIncomingTransferModal = null;
+      }
+
+      // Close the transfer progress modal if it's open
+      if (this.activeTransferModal) {
+        this.activeTransferModal.close();
+        this.activeTransferModal = null;
+      }
+
+      new Notice(t('notice.transfer-cancelled-by-sender'));
+    });
   }
 
   private async connectToServer(): Promise<void> {
@@ -401,7 +426,8 @@ export default class P2PSharePlugin extends Plugin {
       fileMetadata,
       peerName,
       () => {
-        // Cancel callback - could implement cancellation
+        // Cancel callback - notify the receiver
+        this.peerManager?.cancelTransfer(peerId);
         new Notice(t('notice.transfer-cancelled'));
       }
     );
@@ -459,12 +485,15 @@ export default class P2PSharePlugin extends Plugin {
     }
 
     // Show accept/reject modal with optional auto-accept checkbox
-    new IncomingTransferModal(
+    this.activeIncomingTransferModal = new IncomingTransferModal(
       this.app,
       data.files,
       peerName,
       data.totalSize,
       async (enableAutoAccept: boolean) => {
+        // Clear the incoming modal reference
+        this.activeIncomingTransferModal = null;
+
         // Accept
         this.peerManager?.acceptTransfer(data.peerId);
 
@@ -486,12 +515,16 @@ export default class P2PSharePlugin extends Plugin {
         this.activeTransferModal.open();
       },
       () => {
+        // Clear the incoming modal reference
+        this.activeIncomingTransferModal = null;
+
         // Reject (notice shown by 'transfer-rejected' event handler)
         this.peerManager?.rejectTransfer(data.peerId);
       },
       pairedDevice?.roomSecret || null,
       pairedDevice?.autoAccept || false
-    ).open();
+    );
+    this.activeIncomingTransferModal.open();
   }
 
   /**

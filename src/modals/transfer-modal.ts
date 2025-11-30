@@ -12,6 +12,7 @@ export class TransferModal extends Modal {
   private currentFileProgress: Map<string, number> = new Map();
   private onCancel: () => void;
   private isComplete = false;
+  private isCancelled = false;
 
   constructor(
     app: App,
@@ -72,7 +73,8 @@ export class TransferModal extends Modal {
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
     const cancelBtn = footer.createEl('button', { text: t('common.cancel') });
     cancelBtn.onclick = () => {
-      if (!this.isComplete) {
+      if (!this.isComplete && !this.isCancelled) {
+        this.isCancelled = true;
         this.onCancel();
       }
       this.close();
@@ -180,6 +182,21 @@ export class TransferModal extends Modal {
     }
   }
 
+  /**
+   * Mark a file as saved with a different name (due to duplicate handling)
+   */
+  markFileRenamed(originalName: string, savedName: string): void {
+    const escapedName = CSS.escape(originalName);
+    const item = this.progressContainer?.querySelector(`[data-file="${escapedName}"]`);
+    if (item) {
+      const status = item.querySelector('.p2p-share-file-progress-status') as HTMLElement;
+      if (status) {
+        status.setText(`Saved as: ${savedName}`);
+        status.addClass('renamed');
+      }
+    }
+  }
+
   setError(message: string): void {
     if (this.statusText) {
       this.statusText.setText(t('transfer-modal.status.error', message));
@@ -203,6 +220,13 @@ export class TransferModal extends Modal {
   }
 
   onClose(): void {
+    // If the modal is being closed (X button, ESC, click outside) and transfer is not complete,
+    // trigger the cancel callback to notify the peer
+    if (!this.isComplete && !this.isCancelled) {
+      this.isCancelled = true;
+      this.onCancel();
+    }
+
     const { contentEl } = this;
     contentEl.empty();
   }

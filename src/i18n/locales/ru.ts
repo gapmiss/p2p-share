@@ -41,6 +41,7 @@ export const ru = {
 	'notice.failed-to-connect': 'P2P Share: Не удалось подключиться к серверу. Проверьте URL и убедитесь, что сервер принимает внешние подключения.',
 	'notice.transfer-rejected': 'P2P Share: Передача отклонена',
 	'notice.transfer-cancelled': 'P2P Share: Передача отменена',
+	'notice.transfer-cancelled-by-sender': 'P2P Share: Передача отменена отправителем',
 	'notice.no-files': 'P2P Share: Нет файлов для отправки',
 	'notice.error-sending': 'P2P Share: Ошибка при отправке файлов - {0}',
 	'notice.device-paired': 'P2P Share: Устройство успешно связано!',

@@ -41,6 +41,7 @@ export const zhCN = {
 	'notice.failed-to-connect': 'P2P Share: 无法连接到服务器。请检查 URL 并确保服务器接受外部连接。',
 	'notice.transfer-rejected': 'P2P Share: 传输被拒绝',
 	'notice.transfer-cancelled': 'P2P Share: 传输已取消',
+	'notice.transfer-cancelled-by-sender': 'P2P Share: 发送方已取消传输',
 	'notice.no-files': 'P2P Share: 没有要发送的文件',
 	'notice.error-sending': 'P2P Share: 发送文件时出错 - {0}',
 	'notice.device-paired': 'P2P Share: 设备配对成功！',

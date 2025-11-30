@@ -41,6 +41,7 @@ export const ja = {
 	'notice.failed-to-connect': 'P2P Share: サーバーへの接続に失敗しました。URLを確認し、サーバーが外部接続を受け付けることを確認してください。',
 	'notice.transfer-rejected': 'P2P Share: 転送が拒否されました',
 	'notice.transfer-cancelled': 'P2P Share: 転送がキャンセルされました',
+	'notice.transfer-cancelled-by-sender': 'P2P Share: 送信者によって転送がキャンセルされました',
 	'notice.no-files': 'P2P Share: 送信するファイルがありません',
 	'notice.error-sending': 'P2P Share: ファイル送信エラー - {0}',
 	'notice.device-paired': 'P2P Share: デバイスのペアリングに成功しました！',

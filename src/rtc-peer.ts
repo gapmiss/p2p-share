@@ -11,6 +11,7 @@ import type {
   PairDropProgress,
   PairDropFileTransferComplete,
   PairDropFileInfo,
+  PairDropTransferCanceled,
 } from './types';
 
 const CHUNK_SIZE = 64000; // 64KB chunks (PairDrop uses 64000, not 64*1024)
@@ -483,6 +484,23 @@ export class RTCPeer extends Events {
     this.trigger('transfer-rejected');
   }
 
+  /**
+   * Cancel an outgoing transfer (sender-side cancellation).
+   */
+  cancelTransfer(): void {
+    // Clear any pending transfer
+    this.filesRequested = null;
+    this.filesQueue = [];
+    this.chunker = null;
+    this.busy = false;
+
+    // Notify the receiver
+    const cancelMessage: PairDropTransferCanceled = {
+      type: 'transfer-canceled',
+    };
+    this.sendJSON(cancelMessage);
+  }
+
   private onFileReceived(data: ArrayBuffer, name: string, mime: string): void {
     logger.debug(`onFileReceived called for ${name} (${data.byteLength} bytes)`);
 
@@ -580,6 +598,10 @@ export class RTCPeer extends Events {
 
       case 'file-transfer-complete':
         this.handleFileTransferComplete();
+        break;
+
+      case 'transfer-canceled':
+        this.handleTransferCanceled();
         break;
 
       // === Legacy protocol support (plugin-to-plugin) ===
@@ -689,6 +711,21 @@ export class RTCPeer extends Events {
       logger.debug(`${this.filesQueue.length} files remaining in queue`);
       this.dequeueFile();
     }
+  }
+
+  private handleTransferCanceled(): void {
+    logger.debug('Transfer canceled by sender');
+
+    // Clear any pending or in-progress transfer state
+    this.requestPending = null;
+    this.requestAccepted = null;
+    this.digester = null;
+    this.filesReceived = [];
+    this.totalBytesReceived = 0;
+    this.busy = false;
+
+    // Notify the application layer
+    this.trigger('transfer-canceled');
   }
 
   private handleChunk(chunk: ArrayBuffer): void {
