@@ -5,7 +5,7 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 ## Features
 
 - **P2P File Sharing**: Direct peer-to-peer file transfers using WebRTC
-- **PairDrop Compatible**: Works with PairDrop web and mobile apps
+- **PairDrop Compatible**: Works with PairDrop web and mobile browser apps
 - **Device Pairing**: Pair devices for cross-network file sharing
 - **Share Files & Folders**: Share individual files or entire folders between vaults
 - **Cross-Platform**: Works on desktop (Windows, macOS, Linux) and mobile
@@ -13,7 +13,7 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 - **Progress Tracking**: Real-time transfer progress with detailed status
 - **Multilingual**: Available in 8 languages (English, Spanish, German, French, Russian, Japanese, Korean, Simplified Chinese)
 - **System Notifications**: Optional OS-level notifications for incoming transfers (desktop only)
-- **Configurable**: Custom signaling server, save locations, and log levels
+- **Configurable**: Custom signaling server, save location, and log levels
 
 ## Installation
 
@@ -23,6 +23,13 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 2. Create a folder called `p2p-share` in your vault's `.obsidian/plugins/` directory
 3. Copy the downloaded files into the folder
 4. Enable the plugin in Obsidian Settings > Community Plugins
+
+### Via BRAT (Beta Reviewer's Auto-update Tool):
+
+1. Ensure the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin is installed
+2. Trigger the command Obsidian42 - BRAT: Add a beta plugin for testing
+3. Enter this repository, gapmiss/p2p-share
+4. Enable the "P2P Share" plugin in the community plugin list
 
 ### From Source
 
@@ -146,5 +153,5 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## Credits
 
-- [PairDrop](https://github.com/schlagmichdoch/pairdrop) - The original WebRTC file sharing solution
-- [Obsidian](https://obsidian.md/) - The knowledge management platform
+- [PairDrop](https://github.com/schlagmichdoch/pairdrop)
+- [Obsidian](https://obsidian.md/)
