@@ -28,6 +28,7 @@ export const ja = {
 	// Status bar
 	'status-bar.peers': '{0}台のデバイス',
 	'status-bar.offline': 'オフライン',
+	'status-bar.menu.you-appear-as': '表示名：{0}',
 	'status-bar.menu.show-peers': 'デバイスを表示',
 	'status-bar.menu.pair-device': 'デバイスをペアリング',
 

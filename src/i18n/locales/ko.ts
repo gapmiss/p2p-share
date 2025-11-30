@@ -28,6 +28,7 @@ export const ko = {
 	// Status bar
 	'status-bar.peers': '{0}개 기기',
 	'status-bar.offline': '오프라인',
+	'status-bar.menu.you-appear-as': '표시 이름: {0}',
 	'status-bar.menu.show-peers': '기기 표시',
 	'status-bar.menu.pair-device': '기기 페어링',
 

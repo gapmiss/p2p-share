@@ -716,3 +716,8 @@
   width: 18px;
   height: 18px;
 }
+
+/* Status bar menu - make disabled display name item more visible */
+.p2p-share-status-bar-menu .menu-item.is-disabled {
+  color: var(--text-muted) !important;
+}

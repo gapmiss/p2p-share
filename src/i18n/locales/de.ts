@@ -28,6 +28,7 @@ export const de = {
 	// Status bar
 	'status-bar.peers': '{0} Gerät{1}',
 	'status-bar.offline': 'Offline',
+	'status-bar.menu.you-appear-as': 'Du erscheinst als: {0}',
 	'status-bar.menu.show-peers': 'Geräte anzeigen',
 	'status-bar.menu.pair-device': 'Mit Gerät koppeln',
 

@@ -721,6 +721,19 @@ export default class P2PSharePlugin extends Plugin {
   private showStatusBarContextMenu(e: MouseEvent): void {
     const menu = new Menu();
     const isConnected = this.peerManager?.isConnected() ?? false;
+    const displayName = this.peerManager?.getDisplayName();
+
+    // Add display name as disabled menu item at the top
+    if (isConnected && displayName) {
+      menu.addItem((item) =>
+        item
+          .setTitle(t('status-bar.menu.you-appear-as', displayName))
+          .setIcon('user')
+          .setDisabled(true)
+      );
+
+      menu.addSeparator();
+    }
 
     menu.addItem((item) =>
       item
@@ -744,6 +757,9 @@ export default class P2PSharePlugin extends Plugin {
         .setIcon('link')
         .onClick(() => this.showPairingModal())
     );
+
+    // Add custom class to scope CSS styling
+    menu.dom.addClass('p2p-share-status-bar-menu');
 
     menu.showAtMouseEvent(e);
   }

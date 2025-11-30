@@ -28,6 +28,7 @@ export const fr = {
 	// Status bar
 	'status-bar.peers': '{0} pair{1}',
 	'status-bar.offline': 'Hors ligne',
+	'status-bar.menu.you-appear-as': 'Vous apparaissez comme : {0}',
 	'status-bar.menu.show-peers': 'Afficher les pairs',
 	'status-bar.menu.pair-device': 'Associer un appareil',
 
