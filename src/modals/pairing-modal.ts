@@ -18,7 +18,7 @@ export class PairingModal extends Modal {
   private onCancel: () => void;
   private onSuccess: (roomSecret: string, peerDisplayName: string) => void;
 
-  private peerDisplayName = 'Unknown Device';
+  private peerDisplayName = 'Unknown device';
 
   constructor(
     app: App,
@@ -197,7 +197,7 @@ export class PairingModal extends Modal {
     };
 
     // Focus input
-    setTimeout(() => this.inputEl?.focus(), 50);
+    window.setTimeout(() => this.inputEl?.focus(), 50);
 
     const footer = contentEl.createDiv({ cls: 'p2p-share-modal-footer' });
 
@@ -284,7 +284,7 @@ export class PairingModal extends Modal {
       if (codeEl) {
         const originalText = codeEl.textContent;
         codeEl.textContent = t('pairing-modal.code-copied');
-        setTimeout(() => {
+        window.setTimeout(() => {
           codeEl.textContent = originalText;
         }, 1000);
       }
@@ -337,7 +337,7 @@ export class PairingModal extends Modal {
 
   setPairingSuccess(roomSecret: string, peerDisplayName: string): void {
     this.roomSecret = roomSecret;
-    this.peerDisplayName = peerDisplayName || 'Unknown Device';
+    this.peerDisplayName = peerDisplayName || 'Unknown device';
     this.state = 'success';
     this.render();
     this.onSuccess(roomSecret, this.peerDisplayName);

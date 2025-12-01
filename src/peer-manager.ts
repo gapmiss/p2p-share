@@ -71,7 +71,7 @@ export class PeerManager extends Events {
       // If this is a secret room (paired device), emit event to update device name
       if (data.roomType === 'secret' && data.peers.length > 0) {
         const peer = data.peers[0];
-        const displayName = peer.name.displayName || peer.name.deviceName || peer.name.model || 'Paired Device';
+        const displayName = peer.name.displayName || peer.name.deviceName || peer.name.model || 'Paired device';
         this.trigger('paired-device-identified', {
           roomSecret: data.roomId,
           displayName,
@@ -95,7 +95,7 @@ export class PeerManager extends Events {
 
       // If this is a secret room (paired device), emit event to update device name
       if (data.roomType === 'secret') {
-        const displayName = data.peer.name.displayName || data.peer.name.deviceName || data.peer.name.model || 'Paired Device';
+        const displayName = data.peer.name.displayName || data.peer.name.deviceName || data.peer.name.model || 'Paired device';
         this.trigger('paired-device-identified', {
           roomSecret: data.roomId,
           displayName,
@@ -266,9 +266,9 @@ export class PeerManager extends Events {
     // Wait for channel to be ready
     if (!connection.isReady()) {
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Connection timeout')), 120000); // 2 minutes
+        const timeout = window.setTimeout(() => reject(new Error('Connection timeout')), 120000); // 2 minutes
         connection!.on('channel-open', () => {
-          clearTimeout(timeout);
+          window.clearTimeout(timeout);
           resolve();
         });
       });

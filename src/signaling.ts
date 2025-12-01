@@ -83,7 +83,7 @@ export class SignalingClient extends Events {
         this.ws = new WebSocket(url.toString());
 
         // Set a connection timeout
-        const connectionTimeout = setTimeout(() => {
+        const connectionTimeout = window.setTimeout(() => {
           if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
             logger.error('Connection timeout');
             this.ws.close();
@@ -92,7 +92,7 @@ export class SignalingClient extends Events {
         }, 10000);
 
         this.ws.onopen = () => {
-          clearTimeout(connectionTimeout);
+          window.clearTimeout(connectionTimeout);
           logger.info('Connected to signaling server');
           this.reconnectAttempt = 0;
           // Don't send introduction - PairDrop server sends us our identity automatically
@@ -106,7 +106,7 @@ export class SignalingClient extends Events {
         };
 
         this.ws.onclose = (event) => {
-          clearTimeout(connectionTimeout);
+          window.clearTimeout(connectionTimeout);
           logger.info('Disconnected from signaling server', event.code, event.reason);
           this.trigger('disconnected');
 
@@ -117,7 +117,7 @@ export class SignalingClient extends Events {
         };
 
         this.ws.onerror = (error) => {
-          clearTimeout(connectionTimeout);
+          window.clearTimeout(connectionTimeout);
           logger.error('WebSocket error', error);
           this.trigger('error', error);
           reject(new Error('WebSocket connection failed - check server URL and ensure the server accepts external connections'));
@@ -163,7 +163,7 @@ export class SignalingClient extends Events {
     this.reconnectAttempt = 0;
 
     // Small delay to ensure the old connection is fully closed
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => window.setTimeout(resolve, 100));
 
     // Connect again
     await this.connect();
@@ -411,7 +411,7 @@ export class SignalingClient extends Events {
     const delay = RECONNECT_DELAYS[this.reconnectAttempt];
     logger.info(`Reconnecting in ${delay}ms...`);
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       this.reconnectAttempt++;
       this.connect().catch((error) => {
         logger.error('Reconnection failed', error);

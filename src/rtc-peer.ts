@@ -329,7 +329,7 @@ export class RTCPeer extends Events {
         this.transferResponseResolve = resolve;
 
         // Timeout after 60 seconds
-        setTimeout(() => {
+        window.setTimeout(() => {
           if (this.transferResponseResolve) {
             this.transferResponseResolve(false);
             this.transferResponseResolve = null;
@@ -440,7 +440,7 @@ export class RTCPeer extends Events {
         if (!this.dataChannel || this.dataChannel.bufferedAmount <= MAX_BUFFER_SIZE / 2) {
           resolve();
         } else {
-          setTimeout(check, 50);
+          window.setTimeout(check, 50);
         }
       };
       check();

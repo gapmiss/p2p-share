@@ -199,9 +199,9 @@ export default class P2PSharePlugin extends Plugin {
     });
 
     this.peerManager.on('pair-device-joined', async (data: { roomSecret: string; peerId: string }) => {
-      // Try to get the peer's display name, fall back to 'Paired Device' if not available yet
+      // Try to get the peer's display name, fall back to 'Paired device' if not available yet
       const peerInfo = this.peerManager.getPeerInfo(data.peerId);
-      const displayName = peerInfo?.displayName || 'Paired Device';
+      const displayName = peerInfo?.displayName || 'Paired device';
 
       // Save the pairing
       await this.addPairedDevice(data.roomSecret, displayName);
