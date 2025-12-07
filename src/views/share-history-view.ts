@@ -3,6 +3,7 @@ import type { ShareHistoryEntry, ShareHistoryDirection, ShareHistoryStatus } fro
 import type { ShareHistory } from '../share-history';
 import type P2PSharePlugin from '../main';
 import { t } from '../i18n';
+import { ConfirmModal } from '../modals/confirm-modal';
 
 export const SHARE_HISTORY_VIEW_TYPE = 'p2p-share-history';
 
@@ -578,11 +579,16 @@ export class ShareHistoryView extends ItemView {
    * Clear all history with confirmation
    */
   private async clearAllHistory(): Promise<void> {
-    // TODO: Show confirmation modal instead of browser confirm
-    if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
-      await this.history.clearAll();
-      new Notice('History cleared');
-    }
+    new ConfirmModal(
+      this.app,
+      'Clear All History?',
+      'This will permanently delete all transfer history. This cannot be undone.',
+      async () => {
+        await this.history.clearAll();
+        new Notice('History cleared');
+      },
+      'Clear'
+    ).open();
   }
 
   /**
