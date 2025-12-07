@@ -6,6 +6,8 @@ import type { P2PShareSettings, FileMetadata, TransferProgress, PairedDevice } f
 import { DEFAULT_SETTINGS } from './types';
 import { logger } from './logger';
 import { t, tp } from './i18n';
+import { ShareHistory } from './share-history';
+import { ShareHistoryView, SHARE_HISTORY_VIEW_TYPE } from './views/share-history-view';
 
 // Custom P2P Share icon
 const P2P_SHARE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
@@ -21,13 +23,27 @@ const P2P_SHARE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100
   <line x1="60" y1="40" x2="40" y2="60"/>
 </svg>`;
 
+interface ActiveTransfer {
+  peerId: string;
+  peerName: string;
+  peerOs?: string;
+  peerApp?: string;
+  peerDeviceType?: string;
+  isPaired: boolean;
+  files: FileMetadata[];
+  direction: 'sent' | 'received';
+  startTime: number;
+}
+
 export default class P2PSharePlugin extends Plugin {
   settings: P2PShareSettings = DEFAULT_SETTINGS;
   peerManager: PeerManager | null = null;
+  shareHistory: ShareHistory | null = null;
   private statusBarItem: HTMLElement | null = null;
   private activeTransferModal: TransferModal | null = null;
   private activeIncomingTransferModal: IncomingTransferModal | null = null;
   private activePairingModal: PairingModal | null = null;
+  private activeTransfers: Map<string, ActiveTransfer> = new Map();
 
   async onload(): Promise<void> {
     try {
@@ -42,6 +58,24 @@ export default class P2PSharePlugin extends Plugin {
       // Initialize peer manager
       this.peerManager = new PeerManager(this.app.vault, this.settings);
       this.setupPeerManagerHandlers();
+
+      // Initialize share history
+      const historyPath = `${this.manifest.dir}/share-history.json`;
+      this.shareHistory = new ShareHistory(this.app, historyPath, this.settings.history);
+      await this.shareHistory.load();
+
+      // Register history view
+      this.registerView(
+        SHARE_HISTORY_VIEW_TYPE,
+        (leaf) => new ShareHistoryView(leaf, this, this.shareHistory!)
+      );
+
+      // Add command to open history
+      this.addCommand({
+        id: 'p2p-share-open-history',
+        name: 'Open share history',
+        callback: () => this.activateHistoryView(),
+      });
     } catch (error) {
       console.error('[P2P Share] Fatal error during plugin load:', error);
       new Notice('P2P Share: Failed to load plugin - ' + (error as Error).message);
@@ -177,6 +211,11 @@ export default class P2PSharePlugin extends Plugin {
         this.activeTransferModal.setComplete();
       } else {
         logger.warn('No active transfer modal to update');
+      }
+
+      // Complete all active transfers
+      for (const [peerId] of this.activeTransfers) {
+        this.completeTransfer(peerId, 'completed');
       }
     });
 
@@ -428,16 +467,22 @@ export default class P2PSharePlugin extends Plugin {
       () => {
         // Cancel callback - notify the receiver
         this.peerManager?.cancelTransfer(peerId);
+        this.completeTransfer(peerId, 'cancelled');
         new Notice(t('notice.transfer-cancelled'));
       }
     );
     this.activeTransferModal.open();
 
+    // Track outgoing transfer
+    this.trackOutgoingTransfer(peerId, fileMetadata);
+
     try {
       await this.peerManager.sendFilesToPeer(peerId, nonEmptyFiles);
+      // Success is tracked by transfer-complete event
     } catch (error) {
       logger.error('Error sending files', error);
       this.activeTransferModal?.setError((error as Error).message);
+      this.completeTransfer(peerId, 'failed', (error as Error).message);
       new Notice(t('notice.error-sending', (error as Error).message));
     }
   }
@@ -468,6 +513,9 @@ export default class P2PSharePlugin extends Plugin {
       // Accept immediately
       this.peerManager?.acceptTransfer(data.peerId);
 
+      // Track incoming transfer
+      this.trackIncomingTransfer(data.peerId, data.files);
+
       // Show progress modal (skip the accept/reject modal)
       this.activeTransferModal = new TransferModal(
         this.app,
@@ -476,6 +524,7 @@ export default class P2PSharePlugin extends Plugin {
         peerName,
         () => {
           this.peerManager?.rejectTransfer(data.peerId);
+          this.completeTransfer(data.peerId, 'cancelled');
         }
       );
       this.activeTransferModal.open();
@@ -497,6 +546,9 @@ export default class P2PSharePlugin extends Plugin {
         // Accept
         this.peerManager?.acceptTransfer(data.peerId);
 
+        // Track incoming transfer
+        this.trackIncomingTransfer(data.peerId, data.files);
+
         // Update auto-accept setting if checkbox was checked
         if (enableAutoAccept && pairedDevice) {
           await this.updatePairedDeviceAutoAccept(pairedDevice.roomSecret, true);
@@ -510,6 +562,7 @@ export default class P2PSharePlugin extends Plugin {
           peerName,
           () => {
             this.peerManager?.rejectTransfer(data.peerId);
+            this.completeTransfer(data.peerId, 'cancelled');
           }
         );
         this.activeTransferModal.open();
@@ -520,6 +573,7 @@ export default class P2PSharePlugin extends Plugin {
 
         // Reject (notice shown by 'transfer-rejected' event handler)
         this.peerManager?.rejectTransfer(data.peerId);
+        // No tracking needed for rejected transfers
       },
       pairedDevice?.roomSecret || null,
       pairedDevice?.autoAccept || false
@@ -784,5 +838,105 @@ export default class P2PSharePlugin extends Plugin {
     await this.saveData(this.settings);
     this.peerManager?.updateSettings(this.settings);
     logger.setLevel(this.settings.logLevel);
+    await this.shareHistory?.updateSettings(this.settings.history);
+  }
+
+  async activateHistoryView(): Promise<void> {
+    const { workspace } = this.app;
+
+    let leaf = workspace.getLeavesOfType(SHARE_HISTORY_VIEW_TYPE)[0];
+
+    if (!leaf) {
+      // Create new leaf in right sidebar
+      leaf = workspace.getRightLeaf(false);
+      if (leaf) {
+        await leaf.setViewState({
+          type: SHARE_HISTORY_VIEW_TYPE,
+          active: true,
+        });
+      }
+    }
+
+    // Reveal the leaf (expand sidebar if needed)
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
+  }
+
+  /**
+   * Track an outgoing transfer for history
+   */
+  private trackOutgoingTransfer(peerId: string, files: FileMetadata[]): void {
+    const peerInfo = this.peerManager?.getPeerInfo(peerId);
+    if (!peerInfo) return;
+
+    const roomSecret = this.peerManager?.getRoomSecretForPeer(peerId);
+    const isPaired = roomSecret !== null;
+
+    this.activeTransfers.set(peerId, {
+      peerId,
+      peerName: peerInfo.name.displayName || peerInfo.name.deviceName || 'Unknown',
+      peerOs: peerInfo.name.os,
+      peerApp: peerInfo.name.browser,
+      peerDeviceType: peerInfo.name.type,
+      isPaired,
+      files,
+      direction: 'sent',
+      startTime: Date.now(),
+    });
+  }
+
+  /**
+   * Track an incoming transfer for history
+   */
+  private trackIncomingTransfer(peerId: string, files: FileMetadata[]): void {
+    const peerInfo = this.peerManager?.getPeerInfo(peerId);
+    if (!peerInfo) return;
+
+    const roomSecret = this.peerManager?.getRoomSecretForPeer(peerId);
+    const isPaired = roomSecret !== null;
+
+    this.activeTransfers.set(peerId, {
+      peerId,
+      peerName: peerInfo.name.displayName || peerInfo.name.deviceName || 'Unknown',
+      peerOs: peerInfo.name.os,
+      peerApp: peerInfo.name.browser,
+      peerDeviceType: peerInfo.name.type,
+      isPaired,
+      files,
+      direction: 'received',
+      startTime: Date.now(),
+    });
+  }
+
+  /**
+   * Complete a transfer and add to history
+   */
+  private async completeTransfer(peerId: string, status: 'completed' | 'failed' | 'cancelled', error?: string): Promise<void> {
+    const transfer = this.activeTransfers.get(peerId);
+    if (!transfer || !this.shareHistory) return;
+
+    const duration = Date.now() - transfer.startTime;
+    const files = transfer.files.map(f => ({
+      name: f.name,
+      size: f.size,
+      path: f.path,
+    }));
+
+    await this.shareHistory.addEntry(
+      transfer.direction,
+      transfer.peerName,
+      transfer.peerOs,
+      transfer.peerApp,
+      transfer.peerDeviceType,
+      transfer.peerId,
+      transfer.isPaired,
+      files,
+      status,
+      error,
+      duration
+    );
+
+    this.activeTransfers.delete(peerId);
   }
 }

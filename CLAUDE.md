@@ -252,6 +252,21 @@ When sender cancels at any point, the receiver's modal automatically closes and 
 
 **Files**: `src/types.ts`, `src/rtc-peer.ts`, `src/peer-manager.ts`, `src/main.ts`, `src/modals/transfer-modal.ts`, `src/i18n/locales/*.ts`
 
+### Display name not updating on reconnect
+**Problem**: The "You appear as..." text in the peer modal would show stale data when disconnected and wouldn't update when reconnecting to the server.
+
+**Solution** (Fixed in v0.1.20):
+1. Clear `displayName`, `peerId`, and `peerIdHash` on disconnect in signaling.ts
+2. Add `displayNameEl` reference in peer modal to update the display name dynamically
+3. Create `updateDisplayName()` method to refresh the display name text
+4. Listen to `display-name-updated` events from peer manager
+5. Forward `display-name` events from signaling layer to peer manager
+6. Update display name on connect, disconnect, and display-name-updated events
+
+The display name now updates correctly when connecting, disconnecting, or reconnecting.
+
+**Files**: `src/signaling.ts`, `src/peer-manager.ts`, `src/modals/peer-modal.ts`
+
 ## Security & Encryption
 
 P2P Share uses WebRTC's built-in encryption for secure peer-to-peer transfers:
@@ -292,6 +307,12 @@ For detailed security information, see **SECURITY.md**.
 14. Test system notifications (desktop only) - enable in settings
 15. Test "...and X more" expansion in incoming transfer modal
 16. Test clickable file labels in file picker (click name to toggle checkbox)
+17. Test share history tracking (view sent/received transfers)
+18. Test share history search and filter functionality
+19. Test share history export/import
+20. Test share history retention policy cleanup
+21. Test "Reveal in Vault" for received files in history
+22. Test display name updates on connect/disconnect/reconnect
 
 ## Settings
 
@@ -317,7 +338,71 @@ For detailed security information, see **SECURITY.md**.
 - Auto-accept transfers option per paired device
 - Device management (view, unpair) in settings
 
-## UI/UX Enhancements
+### Share History Settings
+- **Enable history tracking**: Toggle transfer history on/off (default: enabled)
+- **History retention**: How long to keep history (Forever, 7, 30, 90, 180, 365 days; default: 30 days)
+- **Track peer IDs**: Include peer IDs in history for enhanced tracking, or disable for privacy (default: disabled)
+- **Open history sidebar**: Button to open the share history view
+- **Clear all history**: Permanently delete all transfer history with confirmation
+
+## Share History
+
+The plugin includes a comprehensive transfer history system that tracks all sent and received files.
+
+### Architecture
+
+**Files**:
+- `src/share-history.ts` - ShareHistory class with persistence and data management
+- `src/views/share-history-view.ts` - ShareHistoryView sidebar UI component
+- `src/types.ts` - ShareHistoryEntry, ShareHistoryFile, ShareHistorySettings types
+- `.obsidian/plugins/p2p-share/share-history.json` - Persistent storage file
+
+### Data Model
+
+Each history entry tracks:
+- **Core info**: Unique ID, timestamp, direction (sent/received), status (completed/failed/cancelled)
+- **Peer info**: Display name, OS, browser/app, device type, paired status, peer ID (optional)
+- **Transfer info**: Array of files (name, size, vault path for received files), total size, duration
+- **Error info**: Error message if transfer failed
+
+### Features
+
+**ShareHistory Class** (`src/share-history.ts`):
+- `load()` / `save()` - Persistence to JSON file
+- `addEntry()` - Add new transfer to history
+- `getEntries()` - Retrieve all history entries
+- `filterEntries()` - Search and filter by direction, peer, status, date, search term
+- `deleteEntry()` / `clearAll()` - Remove entries
+- `exportAsJson()` / `importFromJson()` - Backup/restore
+- `getStatistics()` - Generate transfer stats (total sent/received, success rate, top peers)
+- `cleanupOldEntries()` - Auto-remove entries based on retention policy
+- `updateSettings()` - Apply new retention/privacy settings
+
+**ShareHistoryView Component** (`src/views/share-history-view.ts`):
+- **Time grouping**: Entries grouped by Today, Yesterday, This Week, This Month, Older
+- **Search & filter**: Filter by direction (sent/received), status (completed/failed/cancelled), and search text
+- **Expandable entries**: Multi-file transfers can be expanded to show all files
+- **Context menus**:
+  - Per-entry: Share Again (sent files), Reveal in Vault (received files), Delete
+  - Top menu: View Statistics, Export/Import History, Clear All
+- **Visual indicators**: Color-coded status (green=completed, red=failed, orange=cancelled)
+- **Peer metadata display**: Shows "Peer Name (OS • Browser)" for each transfer
+
+**Integration** (`src/main.ts`):
+- `ActiveTransfer` interface tracks ongoing transfers (peerId, peer info, files, direction, start time)
+- `trackOutgoingTransfer()` - Called when send starts
+- `trackIncomingTransfer()` - Called when receive accepted
+- `completeTransfer()` - Called on success/failure/cancellation, calculates duration and saves to history
+- History tracked automatically for all transfer types (manual, auto-accept, cancelled)
+
+### Privacy Controls
+
+- **Peer ID tracking**: Optional, disabled by default (privacy-first)
+- **Retention policy**: Auto-cleanup old entries (7/30/90/180/365 days or forever)
+- **Export/import**: Users can backup and restore history
+- **Manual deletion**: Delete individual entries or clear all
+
+### UI/UX Enhancements
 
 ### Incoming Transfer Modal
 - **Clickable "...and X more" expansion**: Shows first 5 files by default, click to expand and view all files
@@ -348,7 +433,10 @@ For detailed security information, see **SECURITY.md**.
 - [x] System notifications for incoming transfers
 - [x] Improved modal UX (expandable file lists, clickable labels)
 - [x] Enhanced log level descriptions
-- [ ] Additional languages (Spanish, German, Japanese, etc.)
+- [x] Share history tracking with search/filter
+- [x] Display name shown in status bar menu
+- [x] Display name updates on reconnect
+- [ ] Share Again feature (re-send files from history)
 - [ ] TURN server support for restrictive networks
 - [ ] Transfer queue for multiple files
 - [ ] Resume interrupted transfers

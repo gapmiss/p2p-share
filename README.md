@@ -8,6 +8,7 @@ Share files between Obsidian vaults using WebRTC peer-to-peer connections, power
 - **PairDrop Compatible**: Works with PairDrop web and mobile browser apps
 - **Device Pairing**: Pair devices for cross-network file sharing
 - **Share Files & Folders**: Share individual files or entire folders between vaults
+- **Transfer History**: Track all sent and received files in a searchable sidebar view
 - **Cross-Platform**: Works on desktop (Windows, macOS, Linux) and mobile
 - **Auto-Discovery**: Automatically discover peers on the same network
 - **Progress Tracking**: Real-time transfer progress with detailed status
@@ -58,10 +59,11 @@ Then copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugins f
   - `Show available peers` - Open peer selection
   - `Share current file` - Share the currently open file
   - `Share files...` - Open file picker
+  - `Open share history` - View transfer history
   - `Reconnect to server` - Manually reconnect
   - `Pair with device` - Pair for cross-network sharing
   - `Toggle connection` - Connect or disconnect from server
-- **Status Bar**: Click the status bar item for quick access to connect/disconnect, show peers, and pair
+- **Status Bar**: Click the status bar item for quick access to connect/disconnect, show peers, pair, and view your display name
 
 ### Receiving Files
 
@@ -82,6 +84,18 @@ Pair devices to share files across different networks:
 
 Manage paired devices in Settings > P2P Share > Paired Devices.
 
+### Share History
+
+View all your sent and received file transfers in the Share History sidebar:
+
+1. Open via command palette: "P2P Share: Open share history"
+2. Or from Settings > P2P Share > Share History > "Open History"
+3. Browse transfers grouped by time (Today, Yesterday, This Week, etc.)
+4. Search by filename, peer name, OS, or browser
+5. Filter by direction (sent/received) and status (completed/failed/cancelled)
+6. Export/import history for backup
+7. View statistics and reveal received files in vault
+
 ## Settings
 
 | Setting | Description |
@@ -93,6 +107,7 @@ Manage paired devices in Settings > P2P Share > Paired Devices.
 | **Auto-connect on startup** | Automatically connect to server when Obsidian loads (default: enabled) |
 | **System Notifications** | Show OS-level notifications for incoming transfers (desktop only, default: disabled) |
 | **Paired Devices** | View and manage paired devices (each can have auto-accept enabled) |
+| **Share History** | Configure history tracking, retention period, and privacy settings |
 
 ## Self-Hosted Server
 

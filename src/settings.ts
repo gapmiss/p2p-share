@@ -258,6 +258,99 @@ export class P2PShareSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
+
+    // Share History
+    new Setting(containerEl)
+      .setHeading()
+      .setName('Share History');
+
+    new Setting(containerEl)
+      .setName('Enable history tracking')
+      .setDesc('Track sent and received file transfers in the history sidebar')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.history.enabled)
+          .onChange(async (value) => {
+            this.plugin.settings.history.enabled = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.shareHistory) {
+              await this.plugin.shareHistory.updateSettings(this.plugin.settings.history);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('History retention')
+      .setDesc('How long to keep transfer history (0 = keep forever)')
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption('0', 'Forever')
+          .addOption('7', '7 days')
+          .addOption('30', '30 days')
+          .addOption('90', '90 days')
+          .addOption('180', '180 days')
+          .addOption('365', '1 year')
+          .setValue(this.plugin.settings.history.retentionDays.toString())
+          .onChange(async (value) => {
+            this.plugin.settings.history.retentionDays = parseInt(value);
+            await this.plugin.saveSettings();
+            if (this.plugin.shareHistory) {
+              await this.plugin.shareHistory.updateSettings(this.plugin.settings.history);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Track peer IDs')
+      .setDesc('Include peer IDs in history (disable for enhanced privacy)')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.history.trackPeerIds)
+          .onChange(async (value) => {
+            this.plugin.settings.history.trackPeerIds = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.shareHistory) {
+              await this.plugin.shareHistory.updateSettings(this.plugin.settings.history);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Open history sidebar')
+      .setDesc('View your transfer history')
+      .addButton((button) =>
+        button
+          .setButtonText('Open History')
+          .onClick(() => {
+            this.app.workspace.getRightLeaf(false)?.setViewState({
+              type: 'p2p-share-history',
+              active: true,
+            });
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Clear all history')
+      .setDesc('Permanently delete all transfer history')
+      .addButton((button) =>
+        button
+          .setButtonText('Clear History')
+          .setWarning()
+          .onClick(() => {
+            new ConfirmModal(
+              this.app,
+              'Clear All History?',
+              'This will permanently delete all transfer history. This cannot be undone.',
+              async () => {
+                if (this.plugin.shareHistory) {
+                  await this.plugin.shareHistory.clearAll();
+                  new Notice('History cleared');
+                }
+              },
+              'Clear'
+            ).open();
+          })
+      );
   }
 
   private renderPairedDevice(container: HTMLElement, device: PairedDevice): void {

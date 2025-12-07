@@ -28,6 +28,8 @@ export interface P2PShareSettings {
   autoConnect: boolean;
   /** Whether to show system notifications for incoming transfers */
   useSystemNotifications: boolean;
+  /** Share history settings */
+  history: ShareHistorySettings;
 }
 
 export const DEFAULT_SETTINGS: P2PShareSettings = {
@@ -38,6 +40,11 @@ export const DEFAULT_SETTINGS: P2PShareSettings = {
   logLevel: 'error',
   autoConnect: true,
   useSystemNotifications: false,
+  history: {
+    enabled: true,
+    retentionDays: 30,
+    trackPeerIds: false,
+  },
 };
 
 export interface PeerInfo {
@@ -217,3 +224,73 @@ export type PairDropMessage =
   | PairDropTextMessage
   | PairDropDisplayNameChanged
   | PairDropDisplayNameRequest;
+
+// ============================================================================
+// Share History
+// Types for tracking and displaying transfer history
+// ============================================================================
+
+/**
+ * Represents a single file in a transfer history entry
+ */
+export interface ShareHistoryFile {
+  name: string;
+  size: number;
+  path?: string; // Vault path for received files
+}
+
+/**
+ * Status of a transfer
+ */
+export type ShareHistoryStatus = 'completed' | 'failed' | 'cancelled';
+
+/**
+ * Direction of a transfer
+ */
+export type ShareHistoryDirection = 'sent' | 'received';
+
+/**
+ * A single entry in the share history
+ */
+export interface ShareHistoryEntry {
+  /** Unique identifier for this entry */
+  id: string;
+  /** When the transfer occurred (Unix timestamp in ms) */
+  timestamp: number;
+  /** Direction of the transfer */
+  direction: ShareHistoryDirection;
+  /** Peer display name at time of transfer */
+  peerName: string;
+  /** Peer OS (e.g., "Mac OS", "Windows", "Android") */
+  peerOs?: string;
+  /** Peer app/browser (e.g., "Safari", "Chrome", "Firefox") */
+  peerApp?: string;
+  /** Peer device type (e.g., "mobile", "tablet", "desktop") */
+  peerDeviceType?: string;
+  /** Peer ID (optional for privacy) */
+  peerId?: string;
+  /** Whether this was a paired device */
+  isPaired: boolean;
+  /** List of files transferred */
+  files: ShareHistoryFile[];
+  /** Total size of all files in bytes */
+  totalSize: number;
+  /** Status of the transfer */
+  status: ShareHistoryStatus;
+  /** Error message if failed */
+  error?: string;
+  /** Transfer duration in milliseconds */
+  duration?: number;
+}
+
+/**
+ * Settings for share history feature
+ */
+export interface ShareHistorySettings {
+  /** Whether to track transfer history */
+  enabled: boolean;
+  /** How long to keep history entries (in days, 0 = forever) */
+  retentionDays: number;
+  /** Whether to track peer IDs (privacy setting) */
+  trackPeerIds: boolean;
+}
