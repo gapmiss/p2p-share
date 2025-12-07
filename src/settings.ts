@@ -301,21 +301,6 @@ export class P2PShareSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Track peer IDs')
-      .setDesc('Include peer IDs in history (disable for enhanced privacy)')
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.history.trackPeerIds)
-          .onChange(async (value) => {
-            this.plugin.settings.history.trackPeerIds = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.shareHistory) {
-              await this.plugin.shareHistory.updateSettings(this.plugin.settings.history);
-            }
-          })
-      );
-
-    new Setting(containerEl)
       .setName('Open history sidebar')
       .setDesc('View your transfer history')
       .addButton((button) =>

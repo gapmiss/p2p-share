@@ -929,7 +929,6 @@ export default class P2PSharePlugin extends Plugin {
       transfer.peerOs,
       transfer.peerApp,
       transfer.peerDeviceType,
-      transfer.peerId,
       transfer.isPaired,
       files,
       status,

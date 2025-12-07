@@ -43,7 +43,6 @@ export const DEFAULT_SETTINGS: P2PShareSettings = {
   history: {
     enabled: true,
     retentionDays: 30,
-    trackPeerIds: false,
   },
 };
 
@@ -267,8 +266,6 @@ export interface ShareHistoryEntry {
   peerApp?: string;
   /** Peer device type (e.g., "mobile", "tablet", "desktop") */
   peerDeviceType?: string;
-  /** Peer ID (optional for privacy) */
-  peerId?: string;
   /** Whether this was a paired device */
   isPaired: boolean;
   /** List of files transferred */
@@ -291,6 +288,4 @@ export interface ShareHistorySettings {
   enabled: boolean;
   /** How long to keep history entries (in days, 0 = forever) */
   retentionDays: number;
-  /** Whether to track peer IDs (privacy setting) */
-  trackPeerIds: boolean;
 }
