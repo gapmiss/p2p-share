@@ -202,7 +202,14 @@ export class RTCPeer extends Events {
 
       // Add error handler for RTCPeerConnection
       this.connection.onicecandidateerror = (event) => {
-        logger.error('ICE candidate error:', event);
+        // Only log if connection fails to establish
+        // Individual ICE candidate failures are normal - ICE tries multiple paths
+        if (this.connection?.iceConnectionState === 'failed' ||
+            this.connection?.iceConnectionState === 'disconnected') {
+          logger.error('ICE candidate error:', event);
+        } else {
+          logger.debug('ICE candidate failed (non-critical):', event);
+        }
       };
 
       if (this.isInitiator) {
