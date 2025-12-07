@@ -305,11 +305,20 @@ export class P2PShareSettingTab extends PluginSettingTab {
       .addButton((button) =>
         button
           .setButtonText('Open history')
-          .onClick(() => {
-            this.app.workspace.getRightLeaf(false)?.setViewState({
-              type: 'p2p-share-history',
-              active: true,
-            });
+          .onClick(async () => {
+            // Check if history view is already open
+            const existingLeaf = this.app.workspace.getLeavesOfType('p2p-share-history')[0];
+            if (existingLeaf) {
+              // Activate existing view
+              this.app.workspace.revealLeaf(existingLeaf);
+            } else {
+              // Create new view
+              const leaf = this.app.workspace.getRightLeaf(false);
+              await leaf?.setViewState({
+                type: 'p2p-share-history',
+                active: true,
+              });
+            }
           })
       );
 

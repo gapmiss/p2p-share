@@ -978,10 +978,6 @@
   color: var(--text-on-accent);
 }
 
-.p2p-share-history-entry.status-failed .p2p-share-history-entry-icon {
-  background-color: var(--background-modifier-error);
-}
-
 .p2p-share-history-entry.status-failed .p2p-share-history-entry-icon svg {
   color: var(--text-error);
 }

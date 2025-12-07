@@ -326,13 +326,18 @@ export class ShareHistoryView extends ItemView {
 
     // Status indicator
     if (entry.status !== 'completed') {
-      const statusIcon = firstLine.createSpan({ cls: `p2p-share-history-entry-status ${entry.status}` });
+      const statusIcon = firstLine.createSpan({
+        cls: `p2p-share-history-entry-status ${entry.status}`,
+        attr: {
+          'aria-label': entry.status === 'failed'
+            ? (entry.error || 'Transfer failed')
+            : 'Transfer cancelled'
+        }
+      });
       if (entry.status === 'failed') {
         setIcon(statusIcon, 'x-circle');
-        statusIcon.title = entry.error || 'Transfer failed';
       } else if (entry.status === 'cancelled') {
         setIcon(statusIcon, 'alert-circle');
-        statusIcon.title = 'Transfer cancelled';
       }
     }
 

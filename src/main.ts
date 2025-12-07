@@ -290,8 +290,10 @@ export default class P2PSharePlugin extends Plugin {
       this.activeTransferModal?.markFileRenamed(data.originalName, data.savedName);
     });
 
-    this.peerManager.on('transfer-canceled', () => {
+    this.peerManager.on('transfer-canceled', (peerId: string) => {
       logger.debug('Transfer canceled by sender');
+
+      const wasShowingIncomingModal = !!this.activeIncomingTransferModal;
 
       // Close the incoming transfer modal (accept/decline) if it's open
       if (this.activeIncomingTransferModal) {
@@ -303,6 +305,11 @@ export default class P2PSharePlugin extends Plugin {
       if (this.activeTransferModal) {
         this.activeTransferModal.close();
         this.activeTransferModal = null;
+      }
+
+      // Complete the transfer as cancelled by sender
+      if (this.activeTransfers.has(peerId)) {
+        this.completeTransfer(peerId, 'cancelled', 'Transfer cancelled by sender');
       }
 
       new Notice(t('notice.transfer-cancelled-by-sender'));
@@ -493,6 +500,9 @@ export default class P2PSharePlugin extends Plugin {
     const peerInfo = this.peerManager.getPeerInfo(data.peerId);
     const peerName = peerInfo?.name.displayName || peerInfo?.name.deviceName || 'Unknown peer';
 
+    // Track incoming transfer IMMEDIATELY when request arrives
+    this.trackIncomingTransfer(data.peerId, data.files);
+
     // Find if this peer is paired and check auto-accept setting
     const pairedDevice = this.settings.pairedDevices.find((d) => {
       // Match by peer ID stored during pairing, or by display name
@@ -512,9 +522,6 @@ export default class P2PSharePlugin extends Plugin {
 
       // Accept immediately
       this.peerManager?.acceptTransfer(data.peerId);
-
-      // Track incoming transfer
-      this.trackIncomingTransfer(data.peerId, data.files);
 
       // Show progress modal (skip the accept/reject modal)
       this.activeTransferModal = new TransferModal(
@@ -546,9 +553,6 @@ export default class P2PSharePlugin extends Plugin {
         // Accept
         this.peerManager?.acceptTransfer(data.peerId);
 
-        // Track incoming transfer
-        this.trackIncomingTransfer(data.peerId, data.files);
-
         // Update auto-accept setting if checkbox was checked
         if (enableAutoAccept && pairedDevice) {
           await this.updatePairedDeviceAutoAccept(pairedDevice.roomSecret, true);
@@ -571,9 +575,11 @@ export default class P2PSharePlugin extends Plugin {
         // Clear the incoming modal reference
         this.activeIncomingTransferModal = null;
 
-        // Reject (notice shown by 'transfer-rejected' event handler)
+        // Reject
         this.peerManager?.rejectTransfer(data.peerId);
-        // No tracking needed for rejected transfers
+
+        // Complete transfer as failed
+        this.completeTransfer(data.peerId, 'failed', 'Transfer declined');
       },
       pairedDevice?.roomSecret || null,
       pairedDevice?.autoAccept || false
@@ -916,6 +922,9 @@ export default class P2PSharePlugin extends Plugin {
     const transfer = this.activeTransfers.get(peerId);
     if (!transfer || !this.shareHistory) return;
 
+    // Remove from active transfers FIRST to prevent duplicate completion
+    this.activeTransfers.delete(peerId);
+
     const duration = Date.now() - transfer.startTime;
     const files = transfer.files.map(f => ({
       name: f.name,
@@ -935,7 +944,5 @@ export default class P2PSharePlugin extends Plugin {
       error,
       duration
     );
-
-    this.activeTransfers.delete(peerId);
   }
 }
