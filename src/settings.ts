@@ -161,9 +161,8 @@ export class P2PShareSettingTab extends PluginSettingTab {
           .setButtonText(t('command.pair-device'))
           .setIcon('link')
           .onClick(() => {
-            // Close settings and open pairing modal
-            this.plugin.app.setting.close();
-            this.plugin.app.commands.executeCommandById('p2p-share:p2p-share-pair-device');
+            // Open pairing modal
+            this.plugin.showPairingModal();
           })
       );
 
@@ -262,7 +261,7 @@ export class P2PShareSettingTab extends PluginSettingTab {
     // Share History
     new Setting(containerEl)
       .setHeading()
-      .setName('Share History');
+      .setName('Share history');
 
     new Setting(containerEl)
       .setName('Enable history tracking')
@@ -305,7 +304,7 @@ export class P2PShareSettingTab extends PluginSettingTab {
       .setDesc('View your transfer history')
       .addButton((button) =>
         button
-          .setButtonText('Open History')
+          .setButtonText('Open history')
           .onClick(() => {
             this.app.workspace.getRightLeaf(false)?.setViewState({
               type: 'p2p-share-history',
@@ -319,12 +318,12 @@ export class P2PShareSettingTab extends PluginSettingTab {
       .setDesc('Permanently delete all transfer history')
       .addButton((button) =>
         button
-          .setButtonText('Clear History')
+          .setButtonText('Clear history')
           .setWarning()
           .onClick(() => {
             new ConfirmModal(
               this.app,
-              'Clear All History?',
+              'Clear all history?',
               'This will permanently delete all transfer history. This cannot be undone.',
               async () => {
                 if (this.plugin.shareHistory) {

@@ -124,7 +124,7 @@
 
 .p2p-share-peer-item:focus-visible {
   background-color: var(--background-modifier-hover);
-  outline: 2px solid var(--interactive-accent);
+  outline: 2px solid var(--background-modifier-border-focus);
   outline-offset: -2px;
 }
 
@@ -547,7 +547,7 @@
 .p2p-share-pairing-code:hover,
 .p2p-share-pairing-code:focus-visible {
   background-color: var(--background-modifier-hover);
-  border-color: var(--interactive-accent);
+  border-color: var(--background-modifier-border-focus);
   outline: none;
 }
 
@@ -593,9 +593,9 @@
   max-width: 100%;
 }
 
-.p2p-share-pairing-input:focus {
+.p2p-share-pairing-input:focus-visible {
   background-color: var(--background-modifier-hover);
-  border-color: var(--interactive-accent);
+  border-color: var(--background-modifier-border-focus);
   outline: none;
 }
 
@@ -771,6 +771,13 @@
   background-color: var(--background-modifier-hover);
 }
 
+.p2p-share-history-action-btn:focus-visible {
+  opacity: 1;
+  background-color: var(--background-modifier-hover);
+  outline: 2px solid var(--background-modifier-border-focus);
+  outline-offset: -2px;
+}
+
 /* Filters */
 .p2p-share-history-filters {
   padding: 0.75rem 1rem;
@@ -801,8 +808,8 @@
   font-size: 0.875rem;
 }
 
-.p2p-share-history-search-input:focus {
-  border-color: var(--interactive-accent);
+.p2p-share-history-search-input:focus-visible {
+  border-color: var(--background-modifier-border-focus);
   outline: none;
 }
 
@@ -1066,6 +1073,12 @@
 
 .p2p-share-history-entry-files-summary.clickable {
   cursor: pointer;
+}
+
+.p2p-share-history-entry-files-summary:focus-visible {
+  outline: 2px solid var(--background-modifier-border-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .p2p-share-history-entry-files-list {

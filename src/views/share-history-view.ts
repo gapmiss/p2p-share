@@ -37,6 +37,7 @@ export class ShareHistoryView extends ItemView {
   // DOM element references
   private headerContainer: HTMLElement | null = null;
   private entriesContainer: HTMLElement | null = null;
+  private filterIndicator: HTMLElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: P2PSharePlugin, history: ShareHistory) {
     super(leaf);
@@ -56,7 +57,7 @@ export class ShareHistoryView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Share History';
+    return 'Share history';
   }
 
   getIcon(): string {
@@ -75,7 +76,7 @@ export class ShareHistoryView extends ItemView {
    * Render the entire view
    */
   private render(): void {
-    const container = this.containerEl.children[1];
+    const container = this.containerEl.children[1] as HTMLElement;
     container.empty();
     container.addClass('p2p-share-history-view');
 
@@ -92,12 +93,23 @@ export class ShareHistoryView extends ItemView {
   }
 
   /**
-   * Re-render only the header (for filter indicators)
+   * Update just the filter indicator text (no re-render)
    */
-  private updateHeader(): void {
-    if (!this.headerContainer) return;
-    this.headerContainer.empty();
-    this.renderHeader(this.headerContainer);
+  private updateFilterIndicator(): void {
+    if (!this.filterIndicator) return;
+
+    if (this.filterDirection !== 'all' || this.filterStatus !== 'all') {
+      const filtersText: string[] = [];
+      if (this.filterDirection !== 'all') {
+        filtersText.push(this.filterDirection.charAt(0).toUpperCase() + this.filterDirection.slice(1));
+      }
+      if (this.filterStatus !== 'all') {
+        filtersText.push(this.filterStatus.charAt(0).toUpperCase() + this.filterStatus.slice(1));
+      }
+      this.filterIndicator.setText(` (${filtersText.join(', ')})`);
+    } else {
+      this.filterIndicator.setText('');
+    }
   }
 
   /**
@@ -116,32 +128,39 @@ export class ShareHistoryView extends ItemView {
     const header = container.createDiv({ cls: 'p2p-share-history-header' });
 
     const titleContainer = header.createDiv({ cls: 'p2p-share-history-title-container' });
-    titleContainer.createEl('h4', { text: 'Share History', cls: 'p2p-share-history-title' });
+    titleContainer.createEl('h4', { text: 'Share history', cls: 'p2p-share-history-title' });
 
-    // Show active filters
-    if (this.filterDirection !== 'all' || this.filterStatus !== 'all') {
-      const filtersText: string[] = [];
-      if (this.filterDirection !== 'all') {
-        filtersText.push(this.filterDirection.charAt(0).toUpperCase() + this.filterDirection.slice(1));
-      }
-      if (this.filterStatus !== 'all') {
-        filtersText.push(this.filterStatus.charAt(0).toUpperCase() + this.filterStatus.slice(1));
-      }
-      titleContainer.createSpan({
-        text: ` (${filtersText.join(', ')})`,
-        cls: 'p2p-share-history-filter-indicator'
-      });
-    }
+    // Create filter indicator (keep reference for updates)
+    this.filterIndicator = titleContainer.createSpan({
+      cls: 'p2p-share-history-filter-indicator'
+    });
+    this.updateFilterIndicator();
 
     const actions = header.createDiv({ cls: 'p2p-share-history-actions' });
 
     // Menu button (settings, clear, export/import)
     const menuBtn = actions.createDiv({
       cls: 'clickable-icon p2p-share-history-action-btn',
-      attr: { 'aria-label': 'Options', title: 'Options' }
+      attr: { 'aria-label': 'Options', title: 'Options', tabindex: '0' }
     });
     setIcon(menuBtn, 'more-vertical');
     menuBtn.onclick = (e) => this.showOptionsMenu(e);
+    menuBtn.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        // Get button position for menu
+        const rect = menuBtn.getBoundingClientRect();
+        const mouseEvent = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          clientX: rect.left,
+          clientY: rect.bottom
+        });
+        this.showOptionsMenu(mouseEvent);
+      }
+    });
   }
 
   /**
@@ -335,30 +354,46 @@ export class ShareHistoryView extends ItemView {
       // Multiple files - show count and total size
       const filesText = secondLine.createSpan({
         text: `${entry.files.length} files (${this.formatFileSize(entry.totalSize)})`,
-        cls: 'p2p-share-history-entry-files-summary clickable'
+        cls: 'p2p-share-history-entry-files-summary clickable',
+        attr: {
+          tabindex: '0',
+          role: 'button',
+          'aria-label': 'Expand file list'
+        }
       });
-      filesText.onclick = (e) => {
+
+      // Create file list container (always render it)
+      const filesList = content.createDiv({ cls: 'p2p-share-history-entry-files-list' });
+      filesList.style.display = isExpanded ? 'block' : 'none';
+
+      for (const file of entry.files) {
+        const fileItem = filesList.createDiv({ cls: 'p2p-share-history-entry-file-item' });
+        fileItem.createSpan({ text: file.name, cls: 'p2p-share-history-entry-file-name' });
+        fileItem.createSpan({
+          text: ` (${this.formatFileSize(file.size)})`,
+          cls: 'p2p-share-history-entry-file-size'
+        });
+      }
+
+      // Toggle handler - just show/hide the list, no re-render
+      const toggleFiles = (e: Event) => {
         e.stopPropagation();
         if (this.expandedEntries.has(entry.id)) {
           this.expandedEntries.delete(entry.id);
+          filesList.style.display = 'none';
         } else {
           this.expandedEntries.add(entry.id);
+          filesList.style.display = 'block';
         }
-        this.updateEntries();
       };
 
-      // Show file list if expanded
-      if (isExpanded) {
-        const filesList = content.createDiv({ cls: 'p2p-share-history-entry-files-list' });
-        for (const file of entry.files) {
-          const fileItem = filesList.createDiv({ cls: 'p2p-share-history-entry-file-item' });
-          fileItem.createSpan({ text: file.name, cls: 'p2p-share-history-entry-file-name' });
-          fileItem.createSpan({
-            text: ` (${this.formatFileSize(file.size)})`,
-            cls: 'p2p-share-history-entry-file-size'
-          });
+      filesText.onclick = toggleFiles;
+      filesText.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleFiles(e);
         }
-      }
+      });
     }
 
     // Third line: timestamp and duration
@@ -394,12 +429,9 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterDirection === 'all' ? 'check' : 'empty')
         .onClick(() => {
           this.filterDirection = 'all';
-          this.updateHeader();
+          this.updateFilterIndicator();
           this.updateEntries();
         });
-      if (this.filterDirection === 'all') {
-        item.dom.addClass('p2p-share-menu-checked');
-      }
     });
     menu.addItem((item) => {
       item
@@ -407,12 +439,9 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterDirection === 'sent' ? 'check' : 'empty')
         .onClick(() => {
           this.filterDirection = 'sent';
-          this.updateHeader();
+          this.updateFilterIndicator();
           this.updateEntries();
         });
-      if (this.filterDirection === 'sent') {
-        item.dom.addClass('p2p-share-menu-checked');
-      }
     });
     menu.addItem((item) => {
       item
@@ -420,12 +449,9 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterDirection === 'received' ? 'check' : 'empty')
         .onClick(() => {
           this.filterDirection = 'received';
-          this.updateHeader();
+          this.updateFilterIndicator();
           this.updateEntries();
         });
-      if (this.filterDirection === 'received') {
-        item.dom.addClass('p2p-share-menu-checked');
-      }
     });
 
     menu.addSeparator();
@@ -437,12 +463,9 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'all' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'all';
-          this.updateHeader();
+          this.updateFilterIndicator();
           this.updateEntries();
         });
-      if (this.filterStatus === 'all') {
-        item.dom.addClass('p2p-share-menu-checked');
-      }
     });
     menu.addItem((item) => {
       item
@@ -450,12 +473,9 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'completed' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'completed';
-          this.updateHeader();
+          this.updateFilterIndicator();
           this.updateEntries();
         });
-      if (this.filterStatus === 'completed') {
-        item.dom.addClass('p2p-share-menu-checked');
-      }
     });
     menu.addItem((item) => {
       item
@@ -463,12 +483,9 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'failed' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'failed';
-          this.updateHeader();
+          this.updateFilterIndicator();
           this.updateEntries();
         });
-      if (this.filterStatus === 'failed') {
-        item.dom.addClass('p2p-share-menu-checked');
-      }
     });
     menu.addItem((item) => {
       item
@@ -476,12 +493,9 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'cancelled' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'cancelled';
-          this.updateHeader();
+          this.updateFilterIndicator();
           this.updateEntries();
         });
-      if (this.filterStatus === 'cancelled') {
-        item.dom.addClass('p2p-share-menu-checked');
-      }
     });
 
     menu.addSeparator();
@@ -489,7 +503,7 @@ export class ShareHistoryView extends ItemView {
     // Statistics
     menu.addItem((item) =>
       item
-        .setTitle('View Statistics')
+        .setTitle('View statistics')
         .setIcon('bar-chart-2')
         .onClick(() => this.showStatistics())
     );
@@ -499,7 +513,7 @@ export class ShareHistoryView extends ItemView {
     // Export
     menu.addItem((item) =>
       item
-        .setTitle('Export History')
+        .setTitle('Export history')
         .setIcon('download')
         .onClick(() => this.exportHistory())
     );
@@ -507,7 +521,7 @@ export class ShareHistoryView extends ItemView {
     // Import
     menu.addItem((item) =>
       item
-        .setTitle('Import History')
+        .setTitle('Import history')
         .setIcon('upload')
         .onClick(() => this.importHistory())
     );
@@ -517,7 +531,7 @@ export class ShareHistoryView extends ItemView {
     // Clear all
     menu.addItem((item) =>
       item
-        .setTitle('Clear All History')
+        .setTitle('Clear all history')
         .setIcon('trash-2')
         .onClick(() => this.clearAllHistory())
     );
@@ -535,7 +549,7 @@ export class ShareHistoryView extends ItemView {
     if (entry.direction === 'sent' && entry.status === 'completed') {
       menu.addItem((item) =>
         item
-          .setTitle('Share Again')
+          .setTitle('Share again')
           .setIcon('repeat')
           .onClick(() => this.shareAgain(entry))
       );
@@ -545,7 +559,7 @@ export class ShareHistoryView extends ItemView {
     if (entry.direction === 'received' && entry.files.some(f => f.path)) {
       menu.addItem((item) =>
         item
-          .setTitle('Reveal in Vault')
+          .setTitle('Reveal in vault')
           .setIcon('folder-open')
           .onClick(() => this.revealInVault(entry))
       );
@@ -556,7 +570,7 @@ export class ShareHistoryView extends ItemView {
     // Delete entry
     menu.addItem((item) =>
       item
-        .setTitle('Delete from History')
+        .setTitle('Delete from history')
         .setIcon('trash')
         .onClick(() => this.deleteEntry(entry))
     );
@@ -696,7 +710,7 @@ export class ShareHistoryView extends ItemView {
   private async clearAllHistory(): Promise<void> {
     new ConfirmModal(
       this.app,
-      'Clear All History?',
+      'Clear all history?',
       'This will permanently delete all transfer history. This cannot be undone.',
       async () => {
         await this.history.clearAll();

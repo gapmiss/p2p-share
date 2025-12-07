@@ -48,7 +48,7 @@ export class PeerModal extends Modal {
     // Menu button to the right of status
     const menuBtn = statusContainer.createDiv({
       cls: 'p2p-share-menu-btn clickable-icon',
-      attr: { 'aria-label': 'Connection options', tabindex: '0' }
+      attr: { 'aria-label': 'Connection options' }
     });
     setIcon(menuBtn, 'ellipsis');
     menuBtn.onclick = (e) => this.showConnectionMenu(e);
@@ -166,7 +166,6 @@ export class PeerModal extends Modal {
     const item = this.peersContainer.createDiv({
       cls: 'p2p-share-peer-item',
       attr: {
-        tabindex: '0',
         role: 'button',
         'aria-label': `Share with ${peerDisplayName}`
       }

@@ -122,7 +122,7 @@ export class PairingModal extends Modal {
       const codeContainer = contentEl.createDiv({ cls: 'p2p-share-pairing-code-container' });
       const codeEl = codeContainer.createDiv({
         cls: 'p2p-share-pairing-code',
-        attr: { tabindex: '0', role: 'button', 'aria-label': t('pairing-modal.code-click-to-copy') }
+        attr: { role: 'button', 'aria-label': t('pairing-modal.code-click-to-copy') }
       });
       codeEl.setText(this.formatPairKey(this.pairKey));
 

@@ -673,7 +673,7 @@ export default class P2PSharePlugin extends Plugin {
   // DEVICE PAIRING
   // ============================================================================
 
-  private showPairingModal(): void {
+  public showPairingModal(): void {
     if (this.peerManager === null) return;
 
     if (!this.peerManager.isConnected()) {
