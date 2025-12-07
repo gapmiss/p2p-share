@@ -731,6 +731,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  scrollbar-gutter: stable;
 }
 
 /* Header */
@@ -783,9 +784,16 @@
   width: 100%;
 }
 
+.p2p-share-history-search-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
 .p2p-share-history-search-input {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.5rem 2rem 0.5rem 0.5rem;
   border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   background-color: var(--background-primary);
@@ -796,6 +804,31 @@
 .p2p-share-history-search-input:focus {
   border-color: var(--interactive-accent);
   outline: none;
+}
+
+.p2p-share-history-search-clear {
+  position: absolute;
+  right: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.p2p-share-history-search-clear:hover {
+  opacity: 1;
+  background-color: var(--background-modifier-hover);
+}
+
+.p2p-share-history-search-clear svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
 }
 
 .p2p-share-history-filter-group {

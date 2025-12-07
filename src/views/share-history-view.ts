@@ -158,17 +158,38 @@ export class ShareHistoryView extends ItemView {
   private renderSearchAndFilters(container: HTMLElement): void {
     const filtersContainer = container.createDiv({ cls: 'p2p-share-history-filters' });
 
-    // Search input
+    // Search input container with clear button
     const searchContainer = filtersContainer.createDiv({ cls: 'p2p-share-history-search' });
-    const searchInput = searchContainer.createEl('input', {
+    const searchInputWrapper = searchContainer.createDiv({ cls: 'p2p-share-history-search-wrapper' });
+
+    const searchInput = searchInputWrapper.createEl('input', {
       type: 'text',
       placeholder: 'Search files, peers...',
       value: this.searchTerm,
       cls: 'p2p-share-history-search-input'
     });
+
+    const clearBtn = searchInputWrapper.createDiv({
+      cls: 'p2p-share-history-search-clear',
+      attr: { 'aria-label': 'Clear search', title: 'Clear search' }
+    });
+    setIcon(clearBtn, 'x');
+
+    // Show/hide clear button based on input value
+    clearBtn.style.display = this.searchTerm ? 'flex' : 'none';
+
     searchInput.oninput = (e) => {
       this.searchTerm = (e.target as HTMLInputElement).value;
+      clearBtn.style.display = this.searchTerm ? 'flex' : 'none';
       this.updateEntries(); // Only update entries, not the whole view
+    };
+
+    clearBtn.onclick = () => {
+      this.searchTerm = '';
+      searchInput.value = '';
+      clearBtn.style.display = 'none';
+      searchInput.focus();
+      this.updateEntries();
     };
   }
 
