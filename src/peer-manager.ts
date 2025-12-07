@@ -41,6 +41,11 @@ export class PeerManager extends Events {
       this.trigger('peers-updated', []);
     });
 
+    this.signaling.on('display-name', () => {
+      // Forward display name update to listeners (e.g., peer modal)
+      this.trigger('display-name-updated');
+    });
+
     this.signaling.on('discovery-mode-switching', () => {
       // Clear all peers and connections when switching discovery mode
       // They will be repopulated when we rejoin the appropriate rooms

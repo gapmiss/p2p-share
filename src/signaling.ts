@@ -146,6 +146,11 @@ export class SignalingClient extends Events {
       // Immediately set ws to null so isConnected() returns false
       this.ws = null;
 
+      // Clear display name and identity on disconnect
+      this.displayName = null;
+      this.peerId = null;
+      this.peerIdHash = null;
+
       // Manually trigger disconnect event since we won't get onclose
       this.trigger('disconnected');
     }

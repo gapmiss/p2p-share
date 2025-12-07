@@ -9,6 +9,7 @@ export class PeerModal extends Modal {
   private onToggleConnection: () => Promise<void>;
   private peersContainer: HTMLElement | null = null;
   private statusEl: HTMLElement | null = null;
+  private displayNameEl: HTMLElement | null = null;
   private connectBtn: HTMLButtonElement | null = null;
   private pairedDevices: PairedDevice[];
 
@@ -35,14 +36,9 @@ export class PeerModal extends Modal {
     const header = contentEl.createDiv({ cls: 'p2p-share-modal-header' });
     header.createEl('h2', { text: t('peer-modal.title') });
 
-    // Our display name
-    const displayName = this.peerManager.getDisplayName();
-    if (displayName) {
-      header.createDiv({
-        cls: 'p2p-share-our-name',
-        text: t('peer-modal.you-appear-as', displayName),
-      });
-    }
+    // Our display name - store reference for updates
+    this.displayNameEl = header.createDiv({ cls: 'p2p-share-our-name' });
+    this.updateDisplayName();
 
     // Connection status with menu button
     const statusContainer = header.createDiv({ cls: 'p2p-share-status-container' });
@@ -73,11 +69,16 @@ export class PeerModal extends Modal {
     });
     this.peerManager.on('server-connected', () => {
       this.updateConnectionStatus();
+      this.updateDisplayName();
       this.renderPeers();
     });
     this.peerManager.on('server-disconnected', () => {
       this.updateConnectionStatus();
+      this.updateDisplayName();
       this.renderPeers();
+    });
+    this.peerManager.on('display-name-updated', () => {
+      this.updateDisplayName();
     });
   }
 
@@ -110,6 +111,15 @@ export class PeerModal extends Modal {
     const isConnected = this.peerManager.isConnected();
     this.statusEl.createSpan({ cls: `p2p-share-status-dot ${isConnected ? 'connected' : 'disconnected'}` });
     this.statusEl.createSpan({ text: isConnected ? t('common.connected') : t('common.disconnected') });
+  }
+
+  private updateDisplayName(): void {
+    if (!this.displayNameEl) return;
+    this.displayNameEl.empty();
+    const displayName = this.peerManager.getDisplayName();
+    if (displayName) {
+      this.displayNameEl.setText(t('peer-modal.you-appear-as', displayName));
+    }
   }
 
   private renderPeers(): void {
