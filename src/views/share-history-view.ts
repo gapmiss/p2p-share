@@ -135,14 +135,6 @@ export class ShareHistoryView extends ItemView {
 
     const actions = header.createDiv({ cls: 'p2p-share-history-actions' });
 
-    // Refresh button
-    const refreshBtn = actions.createDiv({
-      cls: 'clickable-icon p2p-share-history-action-btn',
-      attr: { 'aria-label': 'Refresh', title: 'Refresh' }
-    });
-    setIcon(refreshBtn, 'refresh-cw');
-    refreshBtn.onclick = () => this.render();
-
     // Menu button (settings, clear, export/import)
     const menuBtn = actions.createDiv({
       cls: 'clickable-icon p2p-share-history-action-btn',
