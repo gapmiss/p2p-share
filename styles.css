@@ -1059,3 +1059,85 @@
 .menu-item.p2p-share-menu-checked .menu-item-icon svg {
   color: var(--interactive-accent);
 }
+
+/* ============================================================================
+   Statistics Modal
+   ============================================================================ */
+
+.p2p-share-statistics-modal {
+  min-width: 450px;
+  padding: 1.5rem;
+}
+
+.p2p-share-statistics-modal h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+}
+
+.p2p-share-stats-section {
+  margin-bottom: 1.5rem;
+}
+
+.p2p-share-stats-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85rem;
+}
+
+.p2p-share-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.p2p-share-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.p2p-share-stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.p2p-share-stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.p2p-share-stats-peers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.p2p-share-stats-peer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.p2p-share-stats-peer-name {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.p2p-share-stats-peer-count {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}

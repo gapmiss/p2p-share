@@ -4,6 +4,7 @@ import type { ShareHistory } from '../share-history';
 import type P2PSharePlugin from '../main';
 import { t } from '../i18n';
 import { ConfirmModal } from '../modals/confirm-modal';
+import { StatisticsModal } from '../modals/statistics-modal';
 
 export const SHARE_HISTORY_VIEW_TYPE = 'p2p-share-history';
 
@@ -596,18 +597,7 @@ export class ShareHistoryView extends ItemView {
    */
   private showStatistics(): void {
     const stats = this.history.getStatistics();
-
-    const lines = [
-      `Total transfers: ${stats.totalTransfers}`,
-      `Sent: ${stats.totalSent} (${this.formatFileSize(stats.totalBytesSent)})`,
-      `Received: ${stats.totalReceived} (${this.formatFileSize(stats.totalBytesReceived)})`,
-      `Success rate: ${(stats.successRate * 100).toFixed(1)}%`,
-      '',
-      'Top peers:',
-      ...stats.topPeers.map(p => `  ${p.name}: ${p.count} transfers`)
-    ];
-
-    new Notice(lines.join('\n'), 8000);
+    new StatisticsModal(this.app, stats, (bytes) => this.formatFileSize(bytes)).open();
   }
 
   /**
