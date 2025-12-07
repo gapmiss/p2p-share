@@ -34,6 +34,10 @@ export class ShareHistoryView extends ItemView {
   private expandedEntries: Set<string> = new Set();
   private expandedGroups: Set<TimePeriod> = new Set(['today', 'yesterday']);
 
+  // DOM element references
+  private headerContainer: HTMLElement | null = null;
+  private entriesContainer: HTMLElement | null = null;
+
   constructor(leaf: WorkspaceLeaf, plugin: P2PSharePlugin, history: ShareHistory) {
     super(leaf);
     this.plugin = plugin;
@@ -76,13 +80,33 @@ export class ShareHistoryView extends ItemView {
     container.addClass('p2p-share-history-view');
 
     // Header
-    this.renderHeader(container);
+    this.headerContainer = container.createDiv();
+    this.renderHeader(this.headerContainer);
 
     // Search and filters
     this.renderSearchAndFilters(container);
 
-    // History entries
-    this.renderEntries(container);
+    // History entries container
+    this.entriesContainer = container.createDiv();
+    this.renderEntriesContent();
+  }
+
+  /**
+   * Re-render only the header (for filter indicators)
+   */
+  private updateHeader(): void {
+    if (!this.headerContainer) return;
+    this.headerContainer.empty();
+    this.renderHeader(this.headerContainer);
+  }
+
+  /**
+   * Re-render only the entries (for search/filter changes)
+   */
+  private updateEntries(): void {
+    if (!this.entriesContainer) return;
+    this.entriesContainer.empty();
+    this.renderEntriesContent();
   }
 
   /**
@@ -144,15 +168,16 @@ export class ShareHistoryView extends ItemView {
     });
     searchInput.oninput = (e) => {
       this.searchTerm = (e.target as HTMLInputElement).value;
-      this.render();
+      this.updateEntries(); // Only update entries, not the whole view
     };
   }
 
   /**
    * Render history entries grouped by time period
    */
-  private renderEntries(container: HTMLElement): void {
-    const entriesContainer = container.createDiv({ cls: 'p2p-share-history-entries' });
+  private renderEntriesContent(): void {
+    if (!this.entriesContainer) return;
+    const entriesContainer = this.entriesContainer.createDiv({ cls: 'p2p-share-history-entries' });
 
     // Get filtered entries
     let entries = this.history.filterEntries({
@@ -219,7 +244,7 @@ export class ShareHistoryView extends ItemView {
       } else {
         this.expandedGroups.add(group.period);
       }
-      this.render();
+      this.updateEntries();
     };
 
     // Group entries (if expanded)
@@ -306,7 +331,7 @@ export class ShareHistoryView extends ItemView {
         } else {
           this.expandedEntries.add(entry.id);
         }
-        this.render();
+        this.updateEntries();
       };
 
       // Show file list if expanded
@@ -356,7 +381,8 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterDirection === 'all' ? 'check' : 'empty')
         .onClick(() => {
           this.filterDirection = 'all';
-          this.render();
+          this.updateHeader();
+          this.updateEntries();
         });
       if (this.filterDirection === 'all') {
         item.dom.addClass('p2p-share-menu-checked');
@@ -368,7 +394,8 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterDirection === 'sent' ? 'check' : 'empty')
         .onClick(() => {
           this.filterDirection = 'sent';
-          this.render();
+          this.updateHeader();
+          this.updateEntries();
         });
       if (this.filterDirection === 'sent') {
         item.dom.addClass('p2p-share-menu-checked');
@@ -380,7 +407,8 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterDirection === 'received' ? 'check' : 'empty')
         .onClick(() => {
           this.filterDirection = 'received';
-          this.render();
+          this.updateHeader();
+          this.updateEntries();
         });
       if (this.filterDirection === 'received') {
         item.dom.addClass('p2p-share-menu-checked');
@@ -396,7 +424,8 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'all' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'all';
-          this.render();
+          this.updateHeader();
+          this.updateEntries();
         });
       if (this.filterStatus === 'all') {
         item.dom.addClass('p2p-share-menu-checked');
@@ -408,7 +437,8 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'completed' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'completed';
-          this.render();
+          this.updateHeader();
+          this.updateEntries();
         });
       if (this.filterStatus === 'completed') {
         item.dom.addClass('p2p-share-menu-checked');
@@ -420,7 +450,8 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'failed' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'failed';
-          this.render();
+          this.updateHeader();
+          this.updateEntries();
         });
       if (this.filterStatus === 'failed') {
         item.dom.addClass('p2p-share-menu-checked');
@@ -432,7 +463,8 @@ export class ShareHistoryView extends ItemView {
         .setIcon(this.filterStatus === 'cancelled' ? 'check' : 'empty')
         .onClick(() => {
           this.filterStatus = 'cancelled';
-          this.render();
+          this.updateHeader();
+          this.updateEntries();
         });
       if (this.filterStatus === 'cancelled') {
         item.dom.addClass('p2p-share-menu-checked');
