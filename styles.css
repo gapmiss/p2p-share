@@ -1048,3 +1048,14 @@
 .p2p-share-history-entry-duration {
   color: var(--text-faint);
 }
+
+.p2p-share-history-filter-indicator {
+  color: var(--text-accent);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Menu checkmark with accent color */
+.menu-item.p2p-share-menu-checked .menu-item-icon svg {
+  color: var(--interactive-accent);
+}

@@ -93,6 +93,21 @@ export class ShareHistoryView extends ItemView {
     const titleContainer = header.createDiv({ cls: 'p2p-share-history-title-container' });
     titleContainer.createEl('h4', { text: 'Share History', cls: 'p2p-share-history-title' });
 
+    // Show active filters
+    if (this.filterDirection !== 'all' || this.filterStatus !== 'all') {
+      const filtersText: string[] = [];
+      if (this.filterDirection !== 'all') {
+        filtersText.push(this.filterDirection.charAt(0).toUpperCase() + this.filterDirection.slice(1));
+      }
+      if (this.filterStatus !== 'all') {
+        filtersText.push(this.filterStatus.charAt(0).toUpperCase() + this.filterStatus.slice(1));
+      }
+      titleContainer.createSpan({
+        text: ` (${filtersText.join(', ')})`,
+        cls: 'p2p-share-history-filter-indicator'
+      });
+    }
+
     const actions = header.createDiv({ cls: 'p2p-share-history-actions' });
 
     // Refresh button
@@ -128,33 +143,6 @@ export class ShareHistoryView extends ItemView {
     });
     searchInput.oninput = (e) => {
       this.searchTerm = (e.target as HTMLInputElement).value;
-      this.render();
-    };
-
-    // Direction filter
-    const directionFilter = filtersContainer.createDiv({ cls: 'p2p-share-history-filter-group' });
-    directionFilter.createSpan({ text: 'Direction: ', cls: 'p2p-share-history-filter-label' });
-    const directionSelect = directionFilter.createEl('select', { cls: 'dropdown' });
-    directionSelect.createEl('option', { value: 'all', text: 'All' });
-    directionSelect.createEl('option', { value: 'sent', text: 'Sent' });
-    directionSelect.createEl('option', { value: 'received', text: 'Received' });
-    directionSelect.value = this.filterDirection;
-    directionSelect.onchange = (e) => {
-      this.filterDirection = (e.target as HTMLSelectElement).value as ShareHistoryDirection | 'all';
-      this.render();
-    };
-
-    // Status filter
-    const statusFilter = filtersContainer.createDiv({ cls: 'p2p-share-history-filter-group' });
-    statusFilter.createSpan({ text: 'Status: ', cls: 'p2p-share-history-filter-label' });
-    const statusSelect = statusFilter.createEl('select', { cls: 'dropdown' });
-    statusSelect.createEl('option', { value: 'all', text: 'All' });
-    statusSelect.createEl('option', { value: 'completed', text: 'Completed' });
-    statusSelect.createEl('option', { value: 'failed', text: 'Failed' });
-    statusSelect.createEl('option', { value: 'cancelled', text: 'Cancelled' });
-    statusSelect.value = this.filterStatus;
-    statusSelect.onchange = (e) => {
-      this.filterStatus = (e.target as HTMLSelectElement).value as ShareHistoryStatus | 'all';
       this.render();
     };
   }
@@ -359,6 +347,98 @@ export class ShareHistoryView extends ItemView {
    */
   private showOptionsMenu(e: MouseEvent): void {
     const menu = new Menu();
+
+    // Direction filter section
+    menu.addItem((item) => {
+      item
+        .setTitle('All directions')
+        .setIcon(this.filterDirection === 'all' ? 'check' : 'empty')
+        .onClick(() => {
+          this.filterDirection = 'all';
+          this.render();
+        });
+      if (this.filterDirection === 'all') {
+        item.dom.addClass('p2p-share-menu-checked');
+      }
+    });
+    menu.addItem((item) => {
+      item
+        .setTitle('Sent')
+        .setIcon(this.filterDirection === 'sent' ? 'check' : 'empty')
+        .onClick(() => {
+          this.filterDirection = 'sent';
+          this.render();
+        });
+      if (this.filterDirection === 'sent') {
+        item.dom.addClass('p2p-share-menu-checked');
+      }
+    });
+    menu.addItem((item) => {
+      item
+        .setTitle('Received')
+        .setIcon(this.filterDirection === 'received' ? 'check' : 'empty')
+        .onClick(() => {
+          this.filterDirection = 'received';
+          this.render();
+        });
+      if (this.filterDirection === 'received') {
+        item.dom.addClass('p2p-share-menu-checked');
+      }
+    });
+
+    menu.addSeparator();
+
+    // Status filter section
+    menu.addItem((item) => {
+      item
+        .setTitle('All statuses')
+        .setIcon(this.filterStatus === 'all' ? 'check' : 'empty')
+        .onClick(() => {
+          this.filterStatus = 'all';
+          this.render();
+        });
+      if (this.filterStatus === 'all') {
+        item.dom.addClass('p2p-share-menu-checked');
+      }
+    });
+    menu.addItem((item) => {
+      item
+        .setTitle('Completed')
+        .setIcon(this.filterStatus === 'completed' ? 'check' : 'empty')
+        .onClick(() => {
+          this.filterStatus = 'completed';
+          this.render();
+        });
+      if (this.filterStatus === 'completed') {
+        item.dom.addClass('p2p-share-menu-checked');
+      }
+    });
+    menu.addItem((item) => {
+      item
+        .setTitle('Failed')
+        .setIcon(this.filterStatus === 'failed' ? 'check' : 'empty')
+        .onClick(() => {
+          this.filterStatus = 'failed';
+          this.render();
+        });
+      if (this.filterStatus === 'failed') {
+        item.dom.addClass('p2p-share-menu-checked');
+      }
+    });
+    menu.addItem((item) => {
+      item
+        .setTitle('Cancelled')
+        .setIcon(this.filterStatus === 'cancelled' ? 'check' : 'empty')
+        .onClick(() => {
+          this.filterStatus = 'cancelled';
+          this.render();
+        });
+      if (this.filterStatus === 'cancelled') {
+        item.dom.addClass('p2p-share-menu-checked');
+      }
+    });
+
+    menu.addSeparator();
 
     // Statistics
     menu.addItem((item) =>
