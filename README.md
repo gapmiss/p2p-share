@@ -141,7 +141,7 @@ For detailed security information, see **[SECURITY.md](SECURITY.md)**.
 
 ## Compatibility
 
-- **Obsidian**: v1.0.0+
+- **Obsidian**: v1.13.0+
 - **Platforms**: Desktop (Windows, macOS, Linux), Mobile (iOS, Android)
 - **Peers**: Works with other Obsidian vaults and PairDrop web/mobile browser apps
 
